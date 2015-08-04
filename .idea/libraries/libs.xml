@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="libs">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/IoTAR/libs/QCARUnityPlayer.jar!/" />
+      <root url="jar://$PROJECT_DIR$/IoTAR/libs/Vuforia.jar!/" />
+      <root url="jar://$PROJECT_DIR$/IoTAR/libs/unity-classes.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
