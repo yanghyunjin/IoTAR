@@ -92,9 +92,9 @@ public:
     // sending out.
     OCRepresentation get()
     {
-       // lightRep.setValue("state", m_state);
-        server_Rep.setValue("power", m_power);
-        m_power = m_power + 10;
+
+        //server_Rep.setValue("power", m_power);
+
 
         return server_Rep;
     }
