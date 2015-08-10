@@ -10,6 +10,8 @@
 #include <pthread.h>
 #include <mutex>
 #include <condition_variable>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 
 #include "OCPlatform.h"
 #include "OCApi.h"
@@ -23,6 +25,8 @@ namespace PH = std::placeholders;
 
 /// This class represents a single resource named 'Light'. This resource has
 /// two simple properties named 'state' and 'power'
+
+char ipAddress[30];
 
 class raspServer
 {
@@ -40,10 +44,11 @@ public:
     OCRepresentation server_Rep;
     ObservationIds server_interestedObservers;
 
+
 public:
     /// Constructor
     raspServer(std::string name, int p)
-        :m_name(name), m_state(false), m_power(p), server_Uri("/a/server"),
+        :m_name(name), m_state(false), m_power(p), server_Uri("/iotar/server"),
                 server_resourceHandle(nullptr) {
         // Initialize representation
         server_Rep.setUri(server_Uri);
@@ -97,6 +102,53 @@ public:
 
 
         return server_Rep;
+    }
+
+
+
+    void sendIpToAndroid(char* argv){
+
+    	if(ipAddress != NULL){
+    		int sock;
+
+
+    		struct sockaddr_in serv_adr;
+
+    		sock = socket(PF_INET, SOCK_DGRAM, 0);
+
+    		if(sock == -1){
+    			std::cout << "socket() error" << std::endl;
+    		}
+
+    		memset(&serv_adr, 0, sizeof(serv_adr));
+    		serv_adr.sin_family = AF_INET;
+    		inet_pton(AF_INET, argv, &serv_adr.sin_addr);
+    		//serv_adr.sin_addr.s_addr = inet_addr("112.108.39.255");
+    		serv_adr.sin_port = htons(9100);   //9100 포트로 한다고 가정 ..
+
+    		std::cout << argv << std::endl;
+
+    		if(sendto(sock, ipAddress, strlen(ipAddress), 0,
+    				(struct sockaddr*) &serv_adr, sizeof(serv_adr))== -1){
+
+    			std::cout<< "app으로 ip 전송 실패" << std::endl;
+    		}else{
+    			std::cout<< "ip broadcast" << std::endl;
+    		}
+
+
+
+    		close(sock);
+
+
+
+    	}else {
+
+    		std::cout << "server의 아이피와 포트를 못 찾았습니다. " << std::endl;
+
+    	}
+
+
     }
 
 
@@ -166,38 +218,41 @@ OCEntityHandlerResult entityHandler(std::shared_ptr<OCResourceRequest> request)
 // ChangeLightRepresentaion is an observation function,
 // which notifies any changes to the resource to stack
 // via notifyObservers
-
 void foundServer(std::shared_ptr<OCResource> resource){
 
-	if(resource){
-
-		if(resource->uri() == "/a/server"){
 
 
-			cout<< resource->host() << endl;
-			//이 호스트를 app에게 알려줘야 하는데 ...
-		}
+  	if(resource){
 
-	}
-}
+  		if(resource->uri() == "/iotar/server"){
 
-void getServerIp(){
+  			strcpy(ipAddress, resource->host().c_str());
+  			cout<< resource->host() << endl;
+  			//이 호스트를 app에게 알려줘야 하는데 ...
+  		}
 
-	std::ostringstream requestURI;
+  	}
+  }
 
-	requestURI << OC_RSRVD_WELL_KNOWN_URI;
+  void getServerIp(){
 
+  	std::ostringstream requestURI;
 
-	OCPlatform::findResource("", requestURI.str(), CT_DEFAULT, &foundServer);
-	cout << "server IP 찾는 중...." << endl;
+  	requestURI << OC_RSRVD_WELL_KNOWN_URI;
+  	OCPlatform::findResource("", requestURI.str(), CT_DEFAULT, &foundServer);
 
-}
+  	//라즈베리파이는 아래 로 해야함
+  	// requestURI << OC_MULTICAST_DISCOVERY_URI;
+  	// OCPlatform::findResource("", requestURI.str(), OC_ALL, &foundServer);
+  	cout << "server IP 찾는 중...." << endl;
 
+  }
 
 
 
 int main(int argc, char* argv[])
 {
+
 
     // Create PlatformConfig object
     PlatformConfig cfg {
@@ -220,7 +275,8 @@ int main(int argc, char* argv[])
 
 
     	getServerIp();
-
+    	sleep(1);
+    	server.sendIpToAndroid(argv[1]);
 
 
         // A condition variable will free the mutex it is given, then do a non-
