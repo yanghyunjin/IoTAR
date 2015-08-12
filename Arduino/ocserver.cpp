@@ -33,11 +33,12 @@ void createLightResource();
 byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
 
 /* Structure to represent a Light resource */
-typedef struct LIGHTRESOURCE{
+typedef struct SPEAKER{
     OCResourceHandle handle;
-    bool state;
-    int power;
-} LightResource;
+    int state;
+    int volume;
+    int track;
+} Speaker;
 
 static LightResource Light;
 
