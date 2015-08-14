@@ -24,6 +24,7 @@
 #include <SdFat.h>
 #include <SdFatUtil.h>
 
+
 //and the MP3 Shield Library
 #include <SFEMP3Shield.h>
 
@@ -150,7 +151,7 @@ void loop() {
     
       input_order((char*)&input);
       
-      Serial.println(input);
+     // Serial.println(input);
       
       play_music(atoi(input));
     }else if(in == 'v'){    // 0~99   //vol 40 -> v240.   vol 1 -> v11.
@@ -160,7 +161,7 @@ void loop() {
       //Serial.println(input);
    
     union twobyte mp3_vol; // create key_command existing variable that can be both word and double byte of left and right.
-    mp3_vol.word = MP3player.getVolume(); // returns a double uint8_t of Left and Right packed into int16_t
+   // mp3_vol.word = MP3player.getVolume(); // returns a double uint8_t of Left and Right packed into int16_t
 
     mp3_vol.byte[1] = 160-atoi(input)*160/100;
     MP3player.setVolume(mp3_vol.byte[1], mp3_vol.byte[1]); // commit new volume
@@ -173,14 +174,10 @@ void loop() {
       
       sel_music = atoi(input);
     
-    }else if(in == 'x'){   //mp3 state if) stop -> x0, play -> x1, pause -> x2;
+    }else if(in == 'x'){   //mp3 state if) stop -> x10, play -> x11, pause -> x12;
     
-    char x[5];
-    x[0] = 'x';
-    x[1] = '1';
-    x[2] = MP3player.isPlaying() + '0';
-    x[3] = '\0';
-     Serial.println(x);
+	getState();
+   
       
       
     }else{
@@ -198,7 +195,8 @@ void loop() {
     }
   
 
-  delay(100);
+  delay(1000);
+	getTime(); 
 }
 
 uint32_t  millis_prv = millis();
@@ -238,7 +236,11 @@ uint32_t  millis_prv = millis();
     
       millis_prv = millis();
       present_song = sel;
+	getTrack();
+        getState();
       flag = 1;
+
+	
 //      Serial.println(F("Playing:"));
 
       //we can get track info by using thv240e following functions and arguments
@@ -262,7 +264,16 @@ uint32_t  millis_prv = millis();
    
    
  }
- 
+ void getState(){
+   
+    char x[5];
+    x[0] = 'x';
+    x[1] = '1';
+    x[2] = MP3player.isPlaying() + '0';
+    x[3] = '\0';
+    Serial.println(x);
+    
+}
  
  void getTime(){    // ex) 23sec -> t223,   241sec -> t3241, 3sec -> t13
   char t[10];
@@ -291,6 +302,7 @@ uint32_t  millis_prv = millis();
   }
   
   Serial.println(t);  
+ 
  
  }
  
@@ -362,7 +374,7 @@ void parse_menu(byte key_command) {
   } else if(key_command >= '1' && key_command <= '9') {
     //convert ascii numbers to real numbers
     key_command = key_command - 48;
-
+	
     play_music(key_command);
     
 
@@ -400,6 +412,8 @@ void parse_menu(byte key_command) {
       MP3player.resumeMusic();
       //Serial.println(F("Resuming"));
     }
+
+	getState();
 
   } else if(key_command == 't') {
     

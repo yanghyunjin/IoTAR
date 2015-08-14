@@ -16,7 +16,6 @@
 #include "OCPlatform.h"
 #include "OCApi.h"
 
-
 using namespace OC;
 using namespace std;
 namespace PH = std::placeholders;
@@ -31,6 +30,15 @@ std::shared_ptr<OCResource> doorLock;
 std::shared_ptr<OCResource> speaker;
 std::shared_ptr<OCResource> hue;
 
+void doPutHue(OCRepresentation);
+void doGetHue();
+
+void doPutSpeaker(OCRepresentation);
+void doGetSpeaker();
+
+void doPutDoorlock(OCRepresentation);
+void doGetDoorlock();
+
 class raspServer {
 
 public:
@@ -39,14 +47,23 @@ public:
 	int order;
 
 	// hue
-	std::string hue_name; std::string hue_state[4]; int hue_power[4]; int hue_brightness[4]; int hue_color[4];
+	std::string hue_name;
+	std::string hue_state[4];
+	std::string hue_power[4];
+	int hue_brightness[4];
+	int hue_color[4];
 
 	// doorlock
-	std::string doorlock_name; std::string doorlock_key;
+	std::string doorlock_name;
+	std::string doorlock_key;
 
 	// speaker
 	std::string speaker_name;
-
+	std::string speaker_title;
+	int speaker_time;
+	int speaker_track;
+	int speaker_volume;
+	int speaker_state;
 
 	// 이 아래 변수는 필수
 	std::string server_Uri;
@@ -65,12 +82,20 @@ public:
 		doorlock_name = "not_linked";
 		speaker_name = "not_linked";
 
-		for(int i=1; i<=3; i++){
-			hue_state[i] = "off";
-			hue_power[i] = 0;
+		for (int i = 1; i <= 3; i++) {
+
+			hue_power[i] = "off";
 			hue_brightness[i] = 0;
 			hue_color[i] = 0;
 		}
+
+		doorlock_key = "null";
+
+		speaker_time = 0;
+		speaker_track = 0;
+		speaker_volume = 0;
+		speaker_state = 0;
+		speaker_title = "null";
 
 		get();
 
@@ -110,19 +135,19 @@ public:
 	// sending out.
 	OCRepresentation get() {
 
-		server_Rep.setValue("hue_name", hue_name);
+		//	server_Rep.setValue("hue_name", hue_name);
 
-		server_Rep.setValue("hue1_state", hue_state[1]);
+		//server_Rep.setValue("hue1_state", hue_state[1]);
 		server_Rep.setValue("hue1_power", hue_power[1]);
 		server_Rep.setValue("hue1_brightness", hue_brightness[1]);
 		server_Rep.setValue("hue1_color", hue_color[1]);
 
-		server_Rep.setValue("hue2_state", hue_state[2]);
+		//server_Rep.setValue("hue2_state", hue_state[2]);
 		server_Rep.setValue("hue2_power", hue_power[2]);
 		server_Rep.setValue("hue2_brightness", hue_brightness[2]);
 		server_Rep.setValue("hue2_color", hue_color[2]);
 
-		server_Rep.setValue("hue3_state", hue_state[3]);
+		//server_Rep.setValue("hue3_state", hue_state[3]);
 		server_Rep.setValue("hue3_power", hue_power[3]);
 		server_Rep.setValue("hue3_brightness", hue_brightness[3]);
 		server_Rep.setValue("hue3_color", hue_color[3]);
@@ -130,49 +155,17 @@ public:
 		server_Rep.setValue("doorlock_name", doorlock_name);
 
 //---------------------------------------------------------------------------------------
-		server_Rep.setValue("hue_name", hue_name);
+		//server_Rep.setValue("speaker_name", speaker_name);
+		//server_Rep.setValue("speaker_track", speaker_track);
+		server_Rep.setValue("speaker_time", speaker_time);
+		server_Rep.setValue("speaker_volume", speaker_volume);
+		server_Rep.setValue("speaker_state", speaker_state);
+		server_Rep.setValue("speaker_title", speaker_title);
 
+		speaker_time = speaker_time + 2;
 		return server_Rep;
 	}
 
-	void sendIpToAndroid(char* argv) {
-
-		if (ipAddress != NULL) {
-			int sock;
-
-			struct sockaddr_in serv_adr;
-
-			sock = socket(PF_INET, SOCK_DGRAM, 0);
-
-			if (sock == -1) {
-				std::cout << "socket() error" << std::endl;
-			}
-
-			memset(&serv_adr, 0, sizeof(serv_adr));
-			serv_adr.sin_family = AF_INET;
-			inet_pton(AF_INET, argv, &serv_adr.sin_addr);
-			//serv_adr.sin_addr.s_addr = inet_addr("112.108.39.255");
-			serv_adr.sin_port = htons(9100);   //9100 포트로 한다고 가정 ..
-
-			std::cout << argv << std::endl;
-
-			if (sendto(sock, ipAddress, strlen(ipAddress), 0,
-					(struct sockaddr*) &serv_adr, sizeof(serv_adr)) == -1) {
-
-				std::cout << "app으로 ip 전송 실패" << std::endl;
-			} else {
-				std::cout << "ip broadcast" << std::endl;
-			}
-
-			close(sock);
-
-		} else {
-
-			std::cout << "server의 아이피와 포트를 못 찾았습니다. " << std::endl;
-
-		}
-
-	}
 
 private:
 // 이 안에 서버 get put 등의 명령어를 정의함.
@@ -192,6 +185,11 @@ private:
 
 				// If the request type is GET
 				if (requestType == "GET") {
+
+					doGetHue();
+					doGetSpeaker();     //도어락이 굳이 get 할 필요가?
+
+
 					pResponse->setErrorCode(200);
 					pResponse->setResponseResult(OC_EH_OK);
 					pResponse->setResourceRepresentation(get());
@@ -201,7 +199,27 @@ private:
 					}
 
 				} else if (requestType == "PUT") {
-					//put
+					//putcout << "\t\t\trequestType : PUT\n";
+					int order;
+					int temp;
+					OCRepresentation rep = request->getResourceRepresentation();
+					rep.getValue("order", order);
+
+					if(order < 10){
+
+					}else if(order <30){  //hue   10~29
+						doPutHue(rep);
+					}else if(order <40){  // speaker  30 ~ 39
+						doPutSpeaker(rep);
+					}else{					// doorlock  40 ~
+
+					}
+					pResponse->setErrorCode(200);
+					pResponse->setResponseResult(OC_EH_OK);
+					pResponse->setResourceRepresentation(get());
+					if (OC_STACK_OK == OCPlatform::sendResponse(pResponse)) {
+						ehResult = OC_EH_OK;
+					}
 				} else if (requestType == "POST") {
 					//post
 				} else if (requestType == "DELETE") {
@@ -221,35 +239,41 @@ private:
 
 };
 
+raspServer server;
+
 // ChangeLightRepresentaion is an observation function,
 // which notifies any changes to the resource to stack
 // via notifyObservers
-void foundServer(std::shared_ptr<OCResource> resource) {
+void foundResource(std::shared_ptr<OCResource> resource) {
 
 	if (resource) {
 
-		if (resource->uri() == "/iotar/server") {
 
-			strcpy(ipAddress, resource->host().c_str());
-			cout << "find server" << endl;
-			//이 호스트를 app에게 알려줘야 하는데 ...
-		}
-
-		if (resource->uri() == "/iotar/hue"){
+		if (resource->uri() == "/iotar/hue") {
 			hue = resource;
 			cout << "find hue" << endl;
 			// 휴 리소스 세팅~!!
 		}
 
+		if (resource->uri() == "/iotar/speaker") {
+			speaker = resource;
+			cout << "find speaker" << endl;
+		}
+
+		if (resource->uri() == "/iotar/doorlock") {
+			doorLock = resource;
+			cout << "find doorlock" << endl;
+		}
+
 	}
 }
 
-void FindServerANDHue() {
+void FindResources() {
 
 	std::ostringstream requestURI;
 
 	requestURI << OC_RSRVD_WELL_KNOWN_URI;
-	OCPlatform::findResource("", requestURI.str(), CT_DEFAULT, &foundServer);
+	OCPlatform::findResource("", requestURI.str(), CT_DEFAULT, &foundResource);
 
 	//라즈베리파이는 아래 로 해야함
 	// requestURI << OC_MULTICAST_DISCOVERY_URI;
@@ -258,6 +282,226 @@ void FindServerANDHue() {
 
 }
 
+//  do 와 on은 하나 !!
+//***************************************************************************************************************** 한세트( put get 보내는 건 전역함수로 해야 됨)
+void onPutHue(const HeaderOptions& headerOptions,
+		const OCRepresentation& rep, const int eCode) {
+
+	try {
+		if (eCode == OC_STACK_OK) {
+			std::cout << "PUT request was successful" << std::endl;
+
+				// 풋완료후 받을 것.
+
+		} else {
+			std::cout << "onPut Response error: " << eCode << std::endl;
+			std::exit(-1);
+		}
+	} catch (std::exception& e) {
+		std::cout << "Exception: " << e.what() << " in onPut" << std::endl;
+	}
+
+}
+
+void doPutHue(OCRepresentation rep){
+	if (hue) {
+
+
+				std::cout << "put to hue" << std::endl;
+
+
+
+
+				hue->put(rep, QueryParamsMap(), &onPutHue);
+
+		}else{
+			std::cout << "hue not found..." << std::endl;
+			FindResources();
+		}
+
+
+}
+
+void onGetHue(const HeaderOptions& headerOptions,
+		const OCRepresentation& rep, const int eCode){
+	try {
+			if (eCode == OC_STACK_OK) {
+				std::cout << "GET request was successful" << std::endl;
+
+				//휴에서 받아오는 거
+				rep.getValue("hue1_power", server.hue_power[1]);
+
+				//받고나서 트랙을 이용해 타이틀알아내기.
+
+			} else {
+				std::cout << "onGET Response error: " << eCode << std::endl;
+				std::exit(-1);
+			}
+		} catch (std::exception& e) {
+			std::cout << "Exception: " << e.what() << " in onGet" << std::endl;
+		}
+
+}
+
+void doGetHue(){
+	if (hue) {
+			std::cout << "Get to hue..." << std::endl;
+			// Invoke resource's get API with the callback parameter
+			hue->get(QueryParamsMap(), &onGetHue);
+	}else{
+		std::cout << "hue not found..." << std::endl;
+		FindResources();
+	}
+}
+
+
+
+
+//***************************************************************************************************************** 한세트( put get 보내는 건 전역함수로 해야 됨)
+void onGetSpeaker(const HeaderOptions& headerOptions,
+		const OCRepresentation& rep, const int eCode) {
+	try {
+		if (eCode == OC_STACK_OK) {
+			std::cout << "GET request was successful" << std::endl;
+
+			rep.getValue("state", server.speaker_state);
+			rep.getValue("volume", server.speaker_volume);
+			rep.getValue("time", server.speaker_time);
+			rep.getValue("present_song", server.speaker_track);
+
+			std::cout << "\tstate: " << server.speaker_state << std::endl;
+			std::cout << "\tvol: " << server.speaker_volume << std::endl;
+			std::cout << "\ttime: " << server.speaker_time << std::endl;
+			std::cout << "\tsong: " << server.speaker_track << std::endl;
+
+			//받고나서 트랙을 이용해 타이틀알아내기.
+
+		} else {
+			std::cout << "onGET Response error: " << eCode << std::endl;
+			std::exit(-1);
+		}
+	} catch (std::exception& e) {
+		std::cout << "Exception: " << e.what() << " in onGet" << std::endl;
+	}
+}
+
+void doGetSpeaker() {
+
+	if (speaker) {
+		std::cout << "Get to speaker..." << std::endl;
+		// Invoke resource's get API with the callback parameter
+		speaker->get(QueryParamsMap(), &onGetSpeaker);
+	}else{
+		std::cout << "speaker not found..." << std::endl;
+		FindResources();
+	}
+
+}
+
+void onPutSpeaker(const HeaderOptions& headerOptions,
+		const OCRepresentation& rep, const int eCode) {
+
+	try {
+		if (eCode == OC_STACK_OK) {
+			std::cout << "PUT request was successful" << std::endl;
+			rep.getValue("time", server.speaker_time);
+			rep.getValue("vol", server.speaker_volume);
+			rep.getValue("track", server.speaker_track);
+			rep.getValue("state", server.speaker_state);
+
+			std::cout << "time : " << server.speaker_time << std::endl;
+		} else {
+			std::cout << "onPut Response error: " << eCode << std::endl;
+			std::exit(-1);
+		}
+	} catch (std::exception& e) {
+		std::cout << "Exception: " << e.what() << " in onPut" << std::endl;
+	}
+
+}
+
+void doPutSpeaker(OCRepresentation rep) {
+
+	if (speaker) {
+
+		std::cout << "put to speaker" << std::endl;
+
+
+		speaker->put(rep, QueryParamsMap(), &onPutSpeaker);
+
+	}else{
+		std::cout << "speaker not found..." << std::endl;
+		FindResources();
+	}
+}
+
+//***************************************************************************************************************** 한세트
+void onGetDoorlock(const HeaderOptions& headerOptions,
+		const OCRepresentation& rep, const int eCode) {
+	try {
+		if (eCode == OC_STACK_OK) {
+			std::cout << "GET request was successful" << std::endl;
+
+
+			//get 에서 가져올게 뭔지
+
+		} else {
+			std::cout << "onGET Response error: " << eCode << std::endl;
+			std::exit(-1);
+		}
+	} catch (std::exception& e) {
+		std::cout << "Exception: " << e.what() << " in onGet" << std::endl;
+	}
+}
+
+void doGetDoorlock() {
+
+	if (doorLock) {
+		std::cout << "Get to speaker..." << std::endl;
+		// Invoke resource's get API with the callback parameter
+		doorLock->get(QueryParamsMap(), &onGetDoorlock);
+	}else{
+		std::cout << "speaker not found..." << std::endl;
+		FindResources();
+	}
+
+}
+
+void onPutDoorlock(const HeaderOptions& headerOptions,
+		const OCRepresentation& rep, const int eCode) {
+
+	try {
+		if (eCode == OC_STACK_OK) {
+			std::cout << "PUT request was successful" << std::endl;
+
+
+		} else {
+			std::cout << "onPut Response error: " << eCode << std::endl;
+			std::exit(-1);
+		}
+	} catch (std::exception& e) {
+		std::cout << "Exception: " << e.what() << " in onPut" << std::endl;
+	}
+
+}
+
+void doPutDoorlock(OCRepresentation rep) {
+
+	if (doorLock) {
+
+		std::cout << "put to speaker" << std::endl;
+
+		doorLock->put(rep, QueryParamsMap(), &onPutDoorlock);
+
+	}else{
+		std::cout << "speaker not found..." << std::endl;
+		FindResources();
+	}
+}
+
+
+
+//***************************************************************************************************************** 한세트
 int main(int argc, char* argv[]) {
 
 	// Create PlatformConfig object
@@ -268,36 +512,14 @@ int main(int argc, char* argv[]) {
 
 	OCPlatform::Configure(cfg);
 	try {
-		// Create the instance of the resource class
-		// (in this case instance of class 'Light').
-		raspServer server;
+
+
 		std::cout << "\nresource 생성 전 " << endl;
 		server.createResource();
 		std::cout << "resource 생성 완료 " << endl;
 
-		FindServerANDHue();
-		sleep(2);
-		server.sendIpToAndroid(argv[1]);
+		FindResources();
 
-
-
-
-
-		/*
-		 //******************************************************************* 아두이노 강제로 연결하기
-		 std::vector<string> resourceTypes;
-		 resourceTypes.push_back("core.doorlock");
-
-		 std::vector<string> interfaceTypes;
-		 interfaceTypes.push_back("oic.if.baseline");
-		 interfaceTypes.push_back("oic.if.ll");
-
-		 doorLock = OCPlatform::constructResourceObject(아두이노 도어락 아이피 , "/iotar/doorlock" , CT_DEFAULT, true, resourceTypes, interfaceTypes);
-		 speaker = OCPlatform::constructResourceObject(아두이노 스피커 아이피 , "/iotar/speaker" , CT_DEFAULT, true, resourceTypes, interfaceTypes);
-
-		 testGet(doorLock);   //GET TEST
-		 //****************************************************************
-		 */
 
 		std::mutex blocker;
 		std::condition_variable cv;
@@ -308,54 +530,6 @@ int main(int argc, char* argv[]) {
 		std::cout << "OCException in main : " << e.what() << endl;
 	}
 
-	// No explicit call to stop the platform.
-	// When OCPlatform::destructor is invoked, internally we do platform cleanup
 
 	return 0;
 }
-
-/*
- void onGet(const HeaderOptions& headerOptions, const OCRepresentation& rep, const int eCode){
-
- try{
- if(eCode == OC_STACK_OK)
- {
- int power;
- string name;
- std::cout << "GET request was successful" << std::endl;
- std::cout << "Resource URI: " << rep.getUri() << std::endl;
-
-
- rep.getValue("power", power);
- rep.getValue("name", name);
-
-
- std::cout << "\tpower: " << power << std::endl;
- std::cout << "\tname: " << name << std::endl;
-
-
- }
- else
- {
- std::cout << "onGET Response error: " << eCode << std::endl;
- std::exit(-1);
- }
-
-
- }catch(std::exception e){
- std::cout << "Exception: " << e.what() << " in onGet" << std::endl;
- }
-
-
- }
-
- void testGet(std::shared_ptr<OCResource> resource){
-
- if(resource){
- std::cout<< "get test " << std::endl;
- QueryParamsMap map;
-
- resource->get(map, &onGet);
- }
-
- }
