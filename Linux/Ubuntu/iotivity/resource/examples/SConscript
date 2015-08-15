@@ -41,22 +41,22 @@ examples_env.AppendUnique(CPPPATH = [
 
 target_os = env.get('TARGET_OS')
 if target_os not in ['windows', 'winrt']:
-	examples_env.AppendUnique(CXXFLAGS = ['-std=c++0x', '-Wall', '-pthread', '-lboost_system','-lssl', '-lcrypto'])
+	examples_env.AppendUnique(CXXFLAGS = ['-std=c++0x', '-Wall', '-pthread','-lboost_system','-lssl', '-lcrypto'])
 
 	# Note: 'pthread' is in libc for android. On other platform, if use
 	# new gcc(>4.9?) it isn't required, otherwise, it's required
 	if target_os != 'android':
-		examples_env.AppendUnique(LIBS = ['-lpthread', '-lboost_system','-lssl', '-lcrypto'])
+		examples_env.AppendUnique(LIBS = ['-lpthread','-lboost_system','-lssl', '-lcrypto'])
 
 examples_env.AppendUnique(LIBPATH = [env.get('BUILD_DIR')])
 examples_env.AppendUnique(RPATH = [env.get('BUILD_DIR')])
-examples_env.PrependUnique(LIBS = ['oc', 'octbstack', 'oc_logger', 'connectivity_abstraction', 'coap', '-lboost_system','-lssl', '-lcrypto'])
+examples_env.PrependUnique(LIBS = ['oc', 'octbstack', 'oc_logger', 'connectivity_abstraction', 'coap','-lboost_system','-lssl', '-lcrypto'])
 if env.get('SECURED') == '1':
     examples_env.AppendUnique(LIBS = ['tinydtls'])
 
 if target_os == 'android':
 	examples_env.AppendUnique(CXXFLAGS = ['-frtti', '-fexceptions'])
-	examples_env.AppendUnique(LIBS = ['gnustl_shared','-lssl', '-lcrypto'])
+	examples_env.AppendUnique(LIBS = ['gnustl_shared'])
 
 	if not env.get('RELEASE'):
 		examples_env.AppendUnique(LIBS = ['log'])
@@ -67,12 +67,9 @@ if target_os in ['darwin', 'ios']:
 ######################################################################
 # Source files and Targets
 ######################################################################
-
 test = examples_env.Program('test', 'test.cpp')
 testclient = examples_env.Program('testclient', 'testclient.cpp')
 
 Alias("examples", [test, testclient
      ])
 env.AppendTarget('examples')
-
-

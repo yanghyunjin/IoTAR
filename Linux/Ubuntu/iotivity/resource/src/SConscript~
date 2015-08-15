@@ -35,7 +35,6 @@ oclib_env.AppendUnique(CPPPATH = [
 		'../include/',
 		'../csdk/stack/include',
 		'../csdk/ocrandom/include',
-		'../csdk/ocmalloc/include',
 		'../csdk/logger/include',
 		'../oc_logger/include',
 		'../csdk/connectivity/lib/libcoap-4.1.1'
@@ -43,7 +42,7 @@ oclib_env.AppendUnique(CPPPATH = [
 
 target_os = env.get('TARGET_OS')
 if target_os not in ['windows', 'winrt']:
-	oclib_env.AppendUnique(CXXFLAGS = ['-std=c++0x', '-Wall', '-fPIC', '-lboost_system'])
+	oclib_env.AppendUnique(CXXFLAGS = ['-std=c++0x', '-Wall', '-fPIC'])
 
 if target_os == 'android':
 	oclib_env.AppendUnique(CXXFLAGS = ['-frtti', '-fexceptions'])
@@ -67,13 +66,13 @@ oclib_src = [
 		'InProcServerWrapper.cpp',
 		'InProcClientWrapper.cpp',
 		'OCResourceRequest.cpp',
-		'uri_builder.cpp',
+'uri_builder.cpp',
 		'uri_parser.cpp',
 		'uri.cpp',
-		'asyncrt_utils.cpp', 'pplx.cpp', 'pplxlinux.cpp', 'threadpool.cpp', 'http_msg.cpp', 'json.cpp', 'json_parsing.cpp', 'json_serialization.cpp', 'http_helpers.cpp', 'http_client_msg.cpp', 'http_client_asio.cpp', 'x509_cert_utilities.cpp','oauth1.cpp'
+		'asyncrt_utils.cpp', 'pplx.cpp', 'pplxlinux.cpp', 'threadpool.cpp', 'http_msg.cpp', 'json.cpp', 'json_parsing.cpp', 'json_serialization.cpp', 'http_helpers.cpp', 'http_client_msg.cpp', 'http_client_asio.cpp', 'x509_cert_utilities.cpp','oauth1.cpp', 'base64.cpp'
 	]
 
-oclib_env.AppendUnique(CPPPATH = [oclib_env.get('SRC_DIR') + '/extlibs/cereal/include'])
 oclib = oclib_env.SharedLibrary('oc', oclib_src)
 oclib_env.InstallTarget(oclib, 'liboc')
+oclib_env.UserInstallTargetLib(oclib, 'liboc')
 

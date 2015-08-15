@@ -45,13 +45,20 @@
 
 using namespace OC;
 using namespace std;
-using namespace concurrency::streams;       // Asynchronous streams
-using namespace utility;                    // Common utilities like string conversions
-using namespace web;                        // Common features like URIs.
-using namespace web::http;                  // Common HTTP functionality
-using namespace web::http::client;          // HTTP client features
-using namespace concurrency::streams;       // Asynchronous streams
-using namespace web::http::experimental::listener;          // HTTP server
+using namespace concurrency::streams;
+// Asynchronous streams
+using namespace utility;
+// Common utilities like string conversions
+using namespace web;
+// Common features like URIs.
+using namespace web::http;
+// Common HTTP functionality
+using namespace web::http::client;
+// HTTP client features
+using namespace concurrency::streams;
+// Asynchronous streams
+using namespace web::http::experimental::listener;
+// HTTP server
 using namespace web::json;
 namespace PH = std::placeholders;
 
@@ -75,378 +82,435 @@ bool isSlowResponse = false;
 /// This class represents a single resource named 'lightResource'. This resource has
 /// two simple properties named 'state' and 'power'
 
-class HueResource
-{
+class HueResource {
 
 public:
-    /// Access this property from a TB client
-	std::string m_power;
-	int    m_brightness;
-	int    m_color;
+	/// Access this property from a TB client
+	std::string m_power[5];
+	int m_brightness[5];
+	int m_color[5];
 	std::string m_name;
-    std::string m_lightUri;
-    OCResourceHandle m_resourceHandle;
-    OCRepresentation m_lightRep;
-    ObservationIds m_interestedObservers;
+	std::string m_lightUri;
+	std::string ip, username;
+	bool firstaccess;
+	OCResourceHandle m_resourceHandle;
+	OCRepresentation m_lightRep;
+	ObservationIds m_interestedObservers;
 
 public:
-    /// Constructor
-    HueResource()
-        :m_name("iotar's hue"), m_power("off"), m_brightness(0), m_lightUri("/iotar/hue"), m_color(0),
-                m_resourceHandle(nullptr) {
-        // Initialize representation
-        m_lightRep.setUri(m_lightUri);
-        m_lightRep.setValue("power", m_power);
-        m_lightRep.setValue("brightness", m_brightness);
-        m_lightRep.setValue("name", m_name);
-        m_lightRep.setValue("color", m_color);
-    }
+	/// Constructor
+	HueResource() :
+			m_name("iotar's hue"), m_lightUri("/iotar/hue"), m_resourceHandle(
+					nullptr), firstaccess(false) {
+		// Initialize representation
+		for (int i = 1; i <= 3; ++i) {
+			m_power[i] = "false";
+			m_brightness[i] = 0;
+			m_color[i] = 0;
+		}
+		m_lightRep.setValue("hue1_brightness", m_brightness[1]);
+		m_lightRep.setValue("hue2_brightness", m_brightness[2]);
+		m_lightRep.setValue("hue3_brightness", m_brightness[3]);
+		m_lightRep.setValue("hue1_color", m_color[1]);
+		m_lightRep.setValue("hue2_color", m_color[2]);
+		m_lightRep.setValue("hue3_color", m_color[3]);
+		m_lightRep.setValue("hue1_power", m_power[1]);
+		m_lightRep.setValue("hue2_power", m_power[2]);
+		m_lightRep.setValue("hue3_power", m_power[3]);
+	}
 
-    /* Note that this does not need to be a member function: for classes you do not have
-    access to, you can accomplish this with a free function: */
+	/* Note that this does not need to be a member function: for classes you do not have
+	 access to, you can accomplish this with a free function: */
 
-    /// This function internally calls registerResource API.
-    void createResource()
-    {
-        //URI of the resource
-        std::string resourceURI = m_lightUri;
-        //resource type name. In this case, it is light
-        std::string resourceTypeName = "core.light";
-        // resource interface.
-        std::string resourceInterface = DEFAULT_INTERFACE;
+	/// This function internally calls registerResource API.
+	void createResource() {
+		//URI of the resource
+		std::string resourceURI = "/iotar/hue";
+		//resource type name. In this case, it is light
+		std::string resourceTypeName = "core.light";
+		// resource interface.
+		std::string resourceInterface = DEFAULT_INTERFACE;
 
-        // OCResourceProperty is defined ocstack.h
-        uint8_t resourceProperty;
+		// OCResourceProperty is defined ocstack.h
+		uint8_t resourceProperty;
 
-        resourceProperty = OC_DISCOVERABLE | OC_OBSERVABLE;
+		resourceProperty = OC_DISCOVERABLE | OC_OBSERVABLE;
 
-        EntityHandler cb = std::bind(&HueResource::entityHandler, this,PH::_1);
+		EntityHandler cb = std::bind(&HueResource::entityHandler, this, PH::_1);
 
-        // This will internally create and register the resource.
-        OCStackResult result = OCPlatform::registerResource(
-                                    m_resourceHandle, resourceURI, resourceTypeName,
-                                    resourceInterface, cb, resourceProperty);
+		// This will internally create and register the resource.
+		OCStackResult result = OCPlatform::registerResource(m_resourceHandle,
+				resourceURI, resourceTypeName, resourceInterface, cb,
+				resourceProperty);
 
-        if (OC_STACK_OK != result)
-        {
-            cout << "Resource creation was unsuccessful\n";
-        }
-    }
+		if (OC_STACK_OK != result) {
+			cout << "Resource creation was unsuccessful\n";
+		}
+	}
 
+	OCResourceHandle getHandle() {
+		return m_resourceHandle;
+	}
 
+	// Puts representation.
+	// Gets values from the representation and
+	// updates the internal state
+	void put(OCRepresentation& rep) {
+		try {
+			rep.getValue("firstaccess", firstaccess);
+			cout<<"put() firstAccess?(true=1, false=0) " <<firstaccess<<endl;
+			if (firstaccess) {
+				rep.getValue("hue_ip", ip);
+				rep.getValue("hue_username", username);
+			} else {
+				rep.getValue("hue1_brightness", m_brightness[1]);
+				rep.getValue("hue2_brightness", m_brightness[2]);
+				rep.getValue("hue3_brightness", m_brightness[3]);
+				rep.getValue("hue1_color", m_color[1]);
+				rep.getValue("hue2_color", m_color[2]);
+				rep.getValue("hue3_color", m_color[3]);
+				rep.getValue("hue1_power", m_power[1]);
+				rep.getValue("hue2_power", m_power[2]);
+				rep.getValue("hue3_power", m_power[3]);
 
-    OCResourceHandle getHandle()
-    {
-        return m_resourceHandle;
-    }
+				GetPutJson(U("http://"+ip+"/api/"+username+"/lights"));
+				cout<<"getPutJson end"<<endl;
+			}
+		} catch (exception& e) {
+			cout << e.what() << endl;
+		}
+	}
 
-    // Puts representation.
-    // Gets values from the representation and
-    // updates the internal state
-    void put(OCRepresentation& rep)
-    {
+	void GetPutJson(std::string p_sUrl,
+				std::string p_sQueryPath = U(""),
+				std::vector<std::pair<std::string, std::string>>* p_pvQuery =
+			nullptr) {
+		web::json::value vJson;
+		std::string sBody;
 
+		for (int i = 1; i <= 3; ++i) {
 
-    }
+			json::value postData;
+			if(m_power[i]=="true")
+				postData["on"] = json::value::boolean(true);
+			else
+				postData["on"] = json::value::boolean(false);
+			postData["bri"] = json::value::number(m_brightness[i]);
+			postData["hue"] = json::value::number(m_color[i]);
 
-    // Post representation.
-    // Post can create new resource or simply act like put.
-    // Gets values from the representation and
-    // updates the internal state
-    OCRepresentation post(OCRepresentation& rep)
-    {
+			http_client client(U("http://"+ip+"/api/"+username+"/lights/"+to_string(i)+"/state/"));
 
+			pplx::task<web::http::http_response> requestTask = client.request(methods::PUT, "", postData.to_string().c_str(), "application/json");
 
-        return get();
-    }
-
-
-    // gets the updated representation.
-    // Updates the representation with latest internal state before
-    // sending out.
-    OCRepresentation get()
-    {
-
-        // Create http_client to send the request.
-        http_client client(U("http://112.108.39.237/api/VgB67nPMqdHJOPXh/lights"));
-
-        // Build request URI and start the request.
-
-        http_request request(methods::GET);
-
-	client.request(request).then([](http_response response) {
-		if(response.status_code() == status_codes::OK) {
-			utility::stringstream_t stream;
-			cout<<"1"<<endl;
-			json::value v = json::value::parse(U(response.extract_string().get()));
-			cout<<"2"<<endl;
-			cout<<"Zzzzzzzzzzzzzzz"<<v.to_string()<<endl;
-			//cout<<"3"<<v.at(U("name"))<<endl;
-			//cout<<"4"<<v.at(U("state")).at(U("on"))<<endl;
+			try {
+				requestTask.wait();
+			} catch (const std::exception &e) {
+				printf("Error exception:%s\n", e.what());
+			}
 
 		}
-	});
+	}
 
+	// Post representation.
+	// Post can create new resource or simply act like put.
+	// Gets values from the representation and
+	// updates the internal state
+	OCRepresentation post(OCRepresentation& rep) {
 
+		return get();
+	}
 
-    	 m_lightRep.setValue("power", m_power);
-    	 m_lightRep.setValue("brightness", m_brightness);
-    	 m_lightRep.setValue("name", m_name);
-    	 m_lightRep.setValue("color", m_color);
+	web::uri_builder GetBuilder(std::string p_sQueryPath,
+			std::vector<std::pair<std::string, std::string>>* p_pvQuery) {
+		web::uri_builder builder;
+		if (!p_sQueryPath.empty()) {
+			builder.set_path(p_sQueryPath);
+			if (!p_pvQuery->empty()) {
+				for (std::pair<std::string, std::string> pQuery : (*p_pvQuery)) {
+					builder.append_query(pQuery.first, pQuery.second);
+				}
+			}
+		}
 
-        return m_lightRep;
-    }
+		return builder;
+	}
 
-    void addType(const std::string& type) const
-    {
-        OCStackResult result = OCPlatform::bindTypeToResource(m_resourceHandle, type);
-        if (OC_STACK_OK != result)
-        {
-            cout << "Binding TypeName to Resource was unsuccessful\n";
-        }
-    }
+	web::json::value GetJson(std::string p_sUrl,
+			std::string p_sQueryPath = U(""),
+			std::vector<std::pair<std::string, std::string>>* p_pvQuery =
+					nullptr) {
+		web::json::value vJson;
+		std::string sBody;
+		http_client client(p_sUrl);
+		web::uri_builder builder = GetBuilder(p_sQueryPath, p_pvQuery);
 
-    void addInterface(const std::string& interface) const
-    {
-        OCStackResult result = OCPlatform::bindInterfaceToResource(m_resourceHandle, interface);
-        if (OC_STACK_OK != result)
-        {
-            cout << "Binding TypeName to Resource was unsuccessful\n";
-        }
-    }
+		pplx::task<void> requestTask = client.request(web::http::methods::GET,
+				builder.to_string()).then(
+				[&](web::http::http_response response) {
+					return response.extract_json();
+				}).then([&](pplx::task<web::json::value> previousTask) {
+			try
+			{
+				vJson = (web::json::value)previousTask.get();
+			}
+			catch (const web::http::http_exception& e)
+			{
+				printf("Error exception:%s\n", e.what());
+			}
+		});
+
+		try {
+			requestTask.wait();
+		} catch (const std::exception &e) {
+			printf("Error exception:%s\n", e.what());
+		}
+		return vJson;
+	}
+
+	// gets the updated representation.
+	// Updates the representation with latest internal state before
+	// sending out.
+	OCRepresentation get() {
+
+		// Create http_client to send the request.
+		cout<<"ip : "<<ip<<",  username : "<<username<<endl;
+		web::json::value v = GetJson(
+				U("http://"+ip+"/api/"+username+"/lights"));
+		cout << "asdf" << endl;
+		m_power[1] = v.at(U("1")).at(U("state")).at(U("on")).to_string();
+		cout << m_power[1] << endl;
+		m_power[2] = v.at(U("2")).at(U("state")).at(U("on")).to_string();
+		cout << m_power[2] << endl;
+		m_power[3] = v.at(U("3")).at(U("state")).at(U("on")).to_string();
+		cout << m_power[3] << endl;
+		m_brightness[1] = v.at(U("1")).at(U("state")).at(U("bri")).as_integer();
+		cout << m_brightness[1] << endl;
+		m_brightness[2] = v.at(U("2")).at(U("state")).at(U("bri")).as_integer();
+		cout << m_brightness[2] << endl;
+		m_brightness[3] = v.at(U("3")).at(U("state")).at(U("bri")).as_integer();
+		cout << m_brightness[3] << endl;
+		m_color[1] = v.at(U("1")).at(U("state")).at(U("hue")).as_integer();
+		cout << m_color[1] << endl;
+		m_color[2] = v.at(U("2")).at(U("state")).at(U("hue")).as_integer();
+		cout << m_color[2] << endl;
+		m_color[3] = v.at(U("3")).at(U("state")).at(U("hue")).as_integer();
+		cout << m_color[3] << endl;
+		cout << "END!!!!" << endl;
+		m_lightRep.setValue("hue1_brightness", m_brightness[1]);
+		m_lightRep.setValue("hue2_brightness", m_brightness[2]);
+		m_lightRep.setValue("hue3_brightness", m_brightness[3]);
+		m_lightRep.setValue("hue1_color", m_color[1]);
+		m_lightRep.setValue("hue2_color", m_color[2]);
+		m_lightRep.setValue("hue3_color", m_color[3]);
+		m_lightRep.setValue("hue1_power", m_power[1]);
+		m_lightRep.setValue("hue2_power", m_power[2]);
+		m_lightRep.setValue("hue3_power", m_power[3]);
+		return m_lightRep;
+	}
+
+	void addType(const std::string& type) const {
+		OCStackResult result = OCPlatform::bindTypeToResource(m_resourceHandle,
+				type);
+		if (OC_STACK_OK != result) {
+			cout << "Binding TypeName to Resource was unsuccessful\n";
+		}
+	}
+
+	void addInterface(const std::string& interface) const {
+		OCStackResult result = OCPlatform::bindInterfaceToResource(
+				m_resourceHandle, interface);
+		if (OC_STACK_OK != result) {
+			cout << "Binding TypeName to Resource was unsuccessful\n";
+		}
+	}
 
 private:
 // This is just a sample implementation of entity handler.
 // Entity handler can be implemented in several ways by the manufacturer
-OCEntityHandlerResult entityHandler(std::shared_ptr<OCResourceRequest> request)
-{
-    cout << "\tIn Server CPP entity handler:\n";
-    OCEntityHandlerResult ehResult = OC_EH_ERROR;
-    if(request)
-    {
-        // Get the request type and request flag
-        std::string requestType = request->getRequestType();
-        int requestFlag = request->getRequestHandlerFlag();
+	OCEntityHandlerResult entityHandler(
+			std::shared_ptr<OCResourceRequest> request) {
+		cout << "\tIn Server CPP entity handler:\n";
+		OCEntityHandlerResult ehResult = OC_EH_ERROR;
+		if (request) {
+			// Get the request type and request flag
+			std::string requestType = request->getRequestType();
+			int requestFlag = request->getRequestHandlerFlag();
 
-        if(requestFlag & RequestHandlerFlag::RequestFlag)
-        {
-            cout << "\t\trequestFlag : Request\n";
-            auto pResponse = std::make_shared<OC::OCResourceResponse>();
-            pResponse->setRequestHandle(request->getRequestHandle());
-            pResponse->setResourceHandle(request->getResourceHandle());
+			if (requestFlag & RequestHandlerFlag::RequestFlag) {
+				cout << "\t\trequestFlag : Request\n";
+				auto pResponse = std::make_shared<OC::OCResourceResponse>();
+				pResponse->setRequestHandle(request->getRequestHandle());
+				pResponse->setResourceHandle(request->getResourceHandle());
 
-            // Check for query params (if any)
-            QueryParamsMap queries = request->getQueryParameters();
+				// Check for query params (if any)
+				QueryParamsMap queries = request->getQueryParameters();
 
-            if (!queries.empty())
-            {
-                std::cout << "\nQuery processing upto entityHandler" << std::endl;
-            }
-            for (auto it : queries)
-            {
-                std::cout << "Query key: " << it.first << " value : " << it.second
-                        << std:: endl;
-            }
+				if (!queries.empty()) {
+					std::cout << "\nQuery processing upto entityHandler"
+							<< std::endl;
+				}
+				for (auto it : queries) {
+					std::cout << "Query key: " << it.first << " value : "
+							<< it.second << std::endl;
+				}
 
-            // If the request type is GET
-            if(requestType == "GET")
-            {
-                cout << "\t\t\trequestType : GET\n";
+				// If the request type is GET
+				if (requestType == "GET") {
+					cout << "\t\t\trequestType : GET\n";
 
+					pResponse->setErrorCode(200);
+					pResponse->setResponseResult(OC_EH_OK);
+					pResponse->setResourceRepresentation(get());
+					if (OC_STACK_OK == OCPlatform::sendResponse(pResponse)) {
+						ehResult = OC_EH_OK;
+					}
 
-                    pResponse->setErrorCode(200);
-                    pResponse->setResponseResult(OC_EH_OK);
-                    pResponse->setResourceRepresentation(get());
-                    if(OC_STACK_OK == OCPlatform::sendResponse(pResponse))
-                    {
-                        ehResult = OC_EH_OK;
-                    }
+				} else if (requestType == "PUT") {
+					cout << "\t\t\trequestType : PUT\n";
+					OCRepresentation rep = request->getResourceRepresentation();
 
-            }
-            else if(requestType == "PUT")
-            {
-                cout << "\t\t\trequestType : PUT\n";
-                OCRepresentation rep = request->getResourceRepresentation();
+					// Do related operations related to PUT request
+					// Update the lightResource
+					put(rep);
+					if(firstaccess)
+						firstaccess = false;
+					pResponse->setErrorCode(200);
+					pResponse->setResponseResult(OC_EH_OK);
+					pResponse->setResourceRepresentation(get());
+					if (OC_STACK_OK == OCPlatform::sendResponse(pResponse)) {
+						ehResult = OC_EH_OK;
+					}
+				} else if (requestType == "POST") {
+					cout << "\t\t\trequestType : POST\n";
 
-                // Do related operations related to PUT request
-                // Update the lightResource
-                put(rep);
-                pResponse->setErrorCode(200);
-                pResponse->setResponseResult(OC_EH_OK);
-                pResponse->setResourceRepresentation(get());
-                if(OC_STACK_OK == OCPlatform::sendResponse(pResponse))
-                {
-                    ehResult = OC_EH_OK;
-                }
-            }
-            else if(requestType == "POST")
-            {
-                cout << "\t\t\trequestType : POST\n";
+					OCRepresentation rep = request->getResourceRepresentation();
 
-                OCRepresentation rep = request->getResourceRepresentation();
+					// Do related operations related to POST request
+					OCRepresentation rep_post = post(rep);
+					pResponse->setResourceRepresentation(rep_post);
+					pResponse->setErrorCode(200);
+					if (rep_post.hasAttribute("createduri")) {
+						pResponse->setResponseResult(OC_EH_RESOURCE_CREATED);
+						pResponse->setNewResourceUri(
+								rep_post.getValue<std::string>("createduri"));
+					} else {
+						pResponse->setResponseResult(OC_EH_OK);
+					}
 
-                // Do related operations related to POST request
-                OCRepresentation rep_post = post(rep);
-                pResponse->setResourceRepresentation(rep_post);
-                pResponse->setErrorCode(200);
-                if(rep_post.hasAttribute("createduri"))
-                {
-                    pResponse->setResponseResult(OC_EH_RESOURCE_CREATED);
-                    pResponse->setNewResourceUri(rep_post.getValue<std::string>("createduri"));
-                }
-                else
-                {
-                    pResponse->setResponseResult(OC_EH_OK);
-                }
+					if (OC_STACK_OK == OCPlatform::sendResponse(pResponse)) {
+						ehResult = OC_EH_OK;
+					}
+				} else if (requestType == "DELETE") {
+					cout << "Delete request received" << endl;
+				}
+			}
 
-                if(OC_STACK_OK == OCPlatform::sendResponse(pResponse))
-                {
-                    ehResult = OC_EH_OK;
-                }
-            }
-            else if(requestType == "DELETE")
-            {
-                cout << "Delete request received" << endl;
-            }
-        }
+			if (requestFlag & RequestHandlerFlag::ObserverFlag) {
+				ObservationInfo observationInfo = request->getObservationInfo();
+				if (ObserveAction::ObserveRegister == observationInfo.action) {
+					m_interestedObservers.push_back(observationInfo.obsId);
+				} else if (ObserveAction::ObserveUnregister
+						== observationInfo.action) {
+					m_interestedObservers.erase(
+							std::remove(m_interestedObservers.begin(),
+									m_interestedObservers.end(),
+									observationInfo.obsId),
+							m_interestedObservers.end());
+				}
 
-        if(requestFlag & RequestHandlerFlag::ObserverFlag)
-        {
-            ObservationInfo observationInfo = request->getObservationInfo();
-            if(ObserveAction::ObserveRegister == observationInfo.action)
-            {
-                m_interestedObservers.push_back(observationInfo.obsId);
-            }
-            else if(ObserveAction::ObserveUnregister == observationInfo.action)
-            {
-                m_interestedObservers.erase(std::remove(
-                                                            m_interestedObservers.begin(),
-                                                            m_interestedObservers.end(),
-                                                            observationInfo.obsId),
-                                                            m_interestedObservers.end());
-            }
+				pthread_t threadId;
 
-            pthread_t threadId;
+				cout << "\t\trequestFlag : Observer\n";
+				gObservation = 1;
+				static int startedThread = 0;
 
-            cout << "\t\trequestFlag : Observer\n";
-            gObservation = 1;
-            static int startedThread = 0;
+				// Observation happens on a different thread in ChangeLightRepresentation function.
+				// If we have not created the thread already, we will create one here.
+				if (!startedThread) {
 
-            // Observation happens on a different thread in ChangeLightRepresentation function.
-            // If we have not created the thread already, we will create one here.
-            if(!startedThread)
-            {
+					startedThread = 1;
+				}
+				ehResult = OC_EH_OK;
+			}
+		} else {
+			std::cout << "Request invalid" << std::endl;
+		}
 
-                startedThread = 1;
-            }
-            ehResult = OC_EH_OK;
-        }
-    }
-    else
-    {
-        std::cout << "Request invalid" << std::endl;
-    }
-
-    return ehResult;
-}
+		return ehResult;
+	}
 
 };
 
-
-
-void PrintUsage()
-{
-    std::cout << std::endl;
-    std::cout << "Usage : simpleserver <value>\n";
-    std::cout << "    Default - Non-secure resource and notify all observers\n";
-    std::cout << "    1 - Non-secure resource and notify list of observers\n\n";
-    std::cout << "    2 - Secure resource and notify all observers\n";
-    std::cout << "    3 - Secure resource and notify list of observers\n\n";
-    std::cout << "    4 - Non-secure resource, GET slow response, notify all observers\n";
+void PrintUsage() {
+	std::cout << std::endl;
+	std::cout << "Usage : hueserver <value>\n";
 }
 
+int main(int argc, char* argv[]) {
+	PrintUsage();
 
-int main(int argc, char* argv[])
-{
-    PrintUsage();
+	if (argc == 1) {
+		isListOfObservers = false;
+		isSecure = false;
+	} else if (argc == 2) {
+		int value = atoi(argv[1]);
+		switch (value) {
+		case 1:
+			isListOfObservers = true;
+			isSecure = false;
+			break;
+		case 2:
+			isListOfObservers = false;
+			isSecure = true;
+			break;
+		case 3:
+			isListOfObservers = true;
+			isSecure = true;
+			break;
+		case 4:
+			isSlowResponse = true;
+			break;
+		default:
+			break;
+		}
+	} else {
+		return -1;
+	}
 
-    if (argc == 1)
-    {
-        isListOfObservers = false;
-        isSecure = false;
-    }
-    else if (argc == 2)
-    {
-        int value = atoi(argv[1]);
-        switch (value)
-        {
-            case 1:
-                isListOfObservers = true;
-                isSecure = false;
-                break;
-            case 2:
-                isListOfObservers = false;
-                isSecure = true;
-                break;
-            case 3:
-                isListOfObservers = true;
-                isSecure = true;
-                break;
-            case 4:
-                isSlowResponse = true;
-                break;
-            default:
-                break;
-       }
-     }
-    else
-    {
-        return -1;
-    }
+	// Create PlatformConfig object
+	PlatformConfig cfg { OC::ServiceType::InProc, OC::ModeType::Server,
+			"0.0.0.0", // By setting to "0.0.0.0", it binds to all available interfaces
+			0,         // Uses randomly available port
+			OC::QualityOfService::LowQos };
 
-    // Create PlatformConfig object
-    PlatformConfig cfg {
-        OC::ServiceType::InProc,
-        OC::ModeType::Server,
-        "0.0.0.0", // By setting to "0.0.0.0", it binds to all available interfaces
-        0,         // Uses randomly available port
-        OC::QualityOfService::LowQos
-    };
+	OCPlatform::Configure(cfg);
+	try {
+		// Create the instance of the resource class
+		// (in this case instance of class 'LightResource').
+		HueResource myHue;
 
-    OCPlatform::Configure(cfg);
-    try
-    {
-        // Create the instance of the resource class
-        // (in this case instance of class 'LightResource').
-        HueResource myLight;
+		// Invoke createResource function of class light.
+		myHue.createResource();
+		std::cout << "Created resource." << std::endl;
 
-        // Invoke createResource function of class light.
-        myLight.createResource();
-        std::cout << "Created resource." << std::endl;
+		std::cout << "Added Interface and Type" << std::endl;
 
-        myLight.addType(std::string("core.brightlight"));
-        myLight.addInterface(std::string(LINK_INTERFACE));
-        std::cout << "Added Interface and Type" << std::endl;
+		// A condition variable will free the mutex it is given, then do a non-
+		// intensive block until 'notify' is called on it.  In this case, since we
+		// don't ever call cv.notify, this should be a non-processor intensive version
+		// of while(true);
+		std::mutex blocker;
+		std::condition_variable cv;
+		std::unique_lock<std::mutex> lock(blocker);
+		std::cout << "Waiting" << std::endl;
+		cv.wait(lock, [] {return false;});
+	} catch (OCException &e) {
+		std::cout << "OCException in main : " << e.what() << endl;
+	}
 
+	// No explicit call to stop the platform.
+	// When OCPlatform::destructor is invoked, internally we do platform cleanup
 
-        // A condition variable will free the mutex it is given, then do a non-
-        // intensive block until 'notify' is called on it.  In this case, since we
-        // don't ever call cv.notify, this should be a non-processor intensive version
-        // of while(true);
-        std::mutex blocker;
-        std::condition_variable cv;
-        std::unique_lock<std::mutex> lock(blocker);
-        std::cout <<"Waiting" << std::endl;
-        cv.wait(lock, []{return false;});
-    }
-    catch(OCException &e)
-    {
-        std::cout << "OCException in main : " << e.what() << endl;
-    }
-
-    // No explicit call to stop the platform.
-    // When OCPlatform::destructor is invoked, internally we do platform cleanup
-
-    return 0;
+	return 0;
 }
 
