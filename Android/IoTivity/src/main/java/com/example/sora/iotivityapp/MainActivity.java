@@ -44,7 +44,9 @@ import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.RadioButton;
 import android.widget.TextView;
 
 
@@ -54,14 +56,17 @@ public class MainActivity extends Activity implements OcPlatform.OnResourceFound
     private PHHueSDK               phHueSDK;
     public static final String     TAG = "Hue Plugin";
     private AccessPointListAdapter adapter;
-    private Button get1, get2, get3, put1, put2, put3, put, cb;
+    private Button get1, get2, get3, put1, put2, put3, put, cb, group;
     private TextView tget1, tget2, tget3;
     private EditText p1, p2, p3, b1, b2 ,b3, c1, c2, c3;
-    private boolean flag = false;
+    private boolean flag = false; // resultVeiwflag
+    private boolean groupFlag = false; //groupView Flag
+    private CheckBox r1, r2, r3;
 
     static int                     OBSERVE_TYPE_TO_USE = ObserveType.OBSERVE.getValue();
 
     public static Light            myLight;
+    public static HueGroup         hueGroup;
     public static OcResource       curResource;
     public static OcResourceHandle resourceHandle;
     static int                     oc                  = 0;
@@ -79,6 +84,7 @@ public class MainActivity extends Activity implements OcPlatform.OnResourceFound
         put3 = (Button) findViewById(R.id.put3);
         put=(Button) findViewById(R.id.allput);
         cb=(Button) findViewById(R.id.connectBtn);
+        group =(Button)findViewById(R.id.group);
         get1.setOnClickListener(this);
         get2.setOnClickListener(this);
         get3.setOnClickListener(this);
@@ -87,6 +93,7 @@ public class MainActivity extends Activity implements OcPlatform.OnResourceFound
         put3.setOnClickListener(this);
         put.setOnClickListener(this);
         cb.setOnClickListener(this);
+        group.setOnClickListener(this);
         tget1 = (TextView) findViewById(R.id.tget1);
         tget2 = (TextView) findViewById(R.id.tget2);
         tget3 = (TextView) findViewById(R.id.tget3);
@@ -99,6 +106,11 @@ public class MainActivity extends Activity implements OcPlatform.OnResourceFound
         c1 = (EditText) findViewById(R.id.color1);
         c2 = (EditText) findViewById(R.id.color2);
         c3 = (EditText) findViewById(R.id.color3);
+        r1 = (CheckBox) findViewById(R.id.light1);
+        r2 = (CheckBox) findViewById(R.id.light2);
+        r3 = (CheckBox) findViewById(R.id.light3);
+        hueGroup = HueGroup.getInstance();
+        setVisibleRadioButton();
         mActivity = this;
         myLight = new Light();
 
@@ -130,23 +142,56 @@ public class MainActivity extends Activity implements OcPlatform.OnResourceFound
 
     }
 
+    private void setCheckRadioButton(){
+        if (hueGroup.hf1)
+            r1.setChecked(true);
+        else
+            r1.setChecked(false);
+        if (hueGroup.hf2)
+            r2.setChecked(true);
+        else
+            r2.setChecked(false);
+        if (hueGroup.hf3)
+            r3.setChecked(true);
+        else
+            r3.setChecked(false);
+    }
+
+    private void setVisibleRadioButton(){
+        if(groupFlag) {
+            r1.setVisibility(View.VISIBLE);
+            r2.setVisibility(View.VISIBLE);
+            r3.setVisibility(View.VISIBLE);
+            setCheckRadioButton();
+        } else {
+            r1.setVisibility(View.INVISIBLE);
+            r2.setVisibility(View.INVISIBLE);
+            r3.setVisibility(View.INVISIBLE);
+        }
+    }
+
 
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.connectBtn:
                 doBridgeSearch();
+                resultView();
                 break;
             case R.id.allput:
                 doPutLightRepresentation(0);
+                resultView();
                 break;
             case R.id.put1:
                 doPutLightRepresentation(1);
+                resultView();
                 break;
             case R.id.put2:
                 doPutLightRepresentation(2);
+                resultView();
                 break;
             case R.id.put3:
                 doPutLightRepresentation(3);
+                resultView();
                 break;
             case R.id.get1:
                 break;
@@ -154,9 +199,24 @@ public class MainActivity extends Activity implements OcPlatform.OnResourceFound
                 break;
             case R.id.get3:
                 break;
+            case R.id.group:
+                if(!groupFlag) {
+                    groupFlag = true;
+                    setVisibleRadioButton();
+                } else {
+                    doDeletetLightRepresentation();
+                    hueGroup.allDeleteGroupList();
+                    if(r1.isChecked()) hueGroup.setGroup("1");
+                    if(r2.isChecked()) hueGroup.setGroup("2");
+                    if(r3.isChecked()) hueGroup.setGroup("3");
+                    doPostLightRepresentation();
+                    groupFlag = false;
+                    setVisibleRadioButton();
+                }
+                break;
 
         }
-        resultView();
+
     }
 
     void resultView() {
@@ -390,10 +450,77 @@ public class MainActivity extends Activity implements OcPlatform.OnResourceFound
             if (resourceUri.equals("/iotar/hue")) {
                 Log.v(TAG, "/iotar/hue gogo");
                 curResource = ocResource;
+                doGetLightRepresentation();
             }
-            doGetLightRepresentation();
         }
 
+    }
+
+
+    private void doPostLightRepresentation() {
+        OcResource.OnPostListener onPostListener = new OcResource.OnPostListener() {
+            @Override
+            public void onPostCompleted(List<OcHeaderOption> list, OcRepresentation ocRepresentation) {
+                Log.e(TAG, "Post resource was successful ");
+                doGetLightRepresentation();
+            }
+
+            @Override
+            public void onPostFailed(Throwable throwable) {
+                if (throwable instanceof OcException) {
+                    OcException ocEx = (OcException) throwable;
+                    ErrorCode errCode = ocEx.getErrorCode();
+                    //do something based on errorCode
+                }
+                Log.e(TAG, throwable.toString());
+            }
+        };
+        Log.d(TAG, "MyLight Post START");
+        OcRepresentation rep = new OcRepresentation();
+
+        try {
+            rep.setValue("hf1", hueGroup.hf1);
+            rep.setValue("hf2", hueGroup.hf2);
+            rep.setValue("hf3", hueGroup.hf3);
+
+        } catch (OcException e) {
+            Log.e(TAG, e.getMessage());
+        }
+        try {
+            Log.d(TAG, "before calling post");
+            curResource.post(rep, new HashMap<String, String>(), onPostListener);
+        } catch (OcException e) {
+            Log.e(TAG, e.getMessage());
+        }
+        Log.d(TAG, "end of put call");
+    }
+
+    private void doDeletetLightRepresentation() {
+        OcResource.OnDeleteListener onDeleteListener = new OcResource.OnDeleteListener() {
+
+            @Override
+            public void onDeleteCompleted(List<OcHeaderOption> list) {
+                Log.e(TAG, "Delete resource was successful ");
+            }
+
+            @Override
+            public void onDeleteFailed(Throwable throwable) {
+                if (throwable instanceof OcException) {
+                    OcException ocEx = (OcException) throwable;
+                    ErrorCode errCode = ocEx.getErrorCode();
+                    //do something based on errorCode
+                }
+                Log.e(TAG, throwable.toString());
+            }
+        };
+        Log.d(TAG, "MyLight Delete START");
+        try {
+            Log.d(TAG, "before calling delete");
+            curResource.deleteResource(onDeleteListener);
+        } catch (OcException e) {
+            Log.e(TAG, e.getMessage());
+        }
+        Log.d(TAG, "end of put call");
     }
 
     private void doPutLightRepresentation(int num) {
@@ -404,7 +531,6 @@ public class MainActivity extends Activity implements OcPlatform.OnResourceFound
                                        OcRepresentation ocRepresentation) {
                 Log.e(TAG, "PUT resource was successful");
                 try {
-                    Log.e(TAG, String.valueOf(myLight.getColor(1)));
                     for(int i=1; i<=3; ++i) {
                         int bri, color;
                         String power;
@@ -457,13 +583,37 @@ public class MainActivity extends Activity implements OcPlatform.OnResourceFound
                         break;
                     case 1:
                         setLight(1, p1.getText().toString(), Integer.parseInt(b1.getText().toString()), Integer.parseInt(c1.getText().toString()));
+                        if(hueGroup.hf1) {
+                            if(hueGroup.hf2) {
+                                setLight(2, p1.getText().toString(), Integer.parseInt(b1.getText().toString()), Integer.parseInt(c1.getText().toString()));
+                            }
+                            if(hueGroup.hf3) {
+                                setLight(3, p1.getText().toString(), Integer.parseInt(b1.getText().toString()), Integer.parseInt(c1.getText().toString()));
+                            }
+                        }
                         break;
                     case 2:
                         Log.e(TAG, p2.getText().toString());
                         setLight(2, p2.getText().toString(), Integer.parseInt(b2.getText().toString()), Integer.parseInt(c2.getText().toString()));
+                        if(hueGroup.hf2) {
+                            if(hueGroup.hf1) {
+                                setLight(1, p2.getText().toString(), Integer.parseInt(b2.getText().toString()), Integer.parseInt(c2.getText().toString()));
+                            }
+                            if(hueGroup.hf3) {
+                                setLight(3, p2.getText().toString(), Integer.parseInt(b2.getText().toString()), Integer.parseInt(c2.getText().toString()));
+                            }
+                        }
                         break;
                     case 3:
                         setLight(3, p3.getText().toString(), Integer.parseInt(b3.getText().toString()), Integer.parseInt(c3.getText().toString()));
+                        if(hueGroup.hf3) {
+                            if(hueGroup.hf1) {
+                                setLight(1, p3.getText().toString(), Integer.parseInt(b3.getText().toString()), Integer.parseInt(c3.getText().toString()));
+                            }
+                            if(hueGroup.hf2) {
+                                setLight(2, p3.getText().toString(), Integer.parseInt(b3.getText().toString()), Integer.parseInt(c3.getText().toString()));
+                            }
+                        }
                         break;
                 }
                 for(int i=1; i<=3; ++i) {
@@ -500,9 +650,23 @@ public class MainActivity extends Activity implements OcPlatform.OnResourceFound
             public void onGetCompleted(List<OcHeaderOption> headerOptionList,
                                        OcRepresentation ocRepresentation) {
                 Log.e(TAG, "GET resource was successful ");
+
                 try {
                     int bri, color;
                     String power;
+                    if(myLight.getFirstaccess()) {
+                        int hueGroupMemberSize = Integer.parseInt(ocRepresentation.getValue("hue_group_size").toString());
+                        Log.e(TAG, "groupsize : " + hueGroupMemberSize);
+                        if(hueGroupMemberSize!=0 ) {
+                            for(int i=1; i<=hueGroupMemberSize; ++i) {
+                                hueGroup.setGroup(ocRepresentation.getValue("hue"+i+"_group").toString());
+                                Log.e(TAG, hueGroup.getGroup().hueGroupList.get(i - 1).toString());
+                            }
+                        }
+                        Log.e(TAG, "group end ");
+                        myLight.setFirstaccess(false);
+                    }
+
                     for(int i=1; i<=3; ++i) {
                         bri = Integer.parseInt(ocRepresentation.getValue("hue" + i + "_brightness").toString());
                         color = Integer.parseInt(ocRepresentation.getValue("hue"+i+"_color").toString());
@@ -512,11 +676,13 @@ public class MainActivity extends Activity implements OcPlatform.OnResourceFound
                         myLight.setPower(power, i);
                     }
                     flag= true;
+                    Log.e(TAG, "firstAcess----------------------" + myLight.getFirstaccess());
                     Log.e(TAG, "onGetCompleted\n<Brightness> Light 1 - " + myLight.getBri(1) +
-                            " Light 2 - " + myLight.getBri(2) + " Light 3 - "  + myLight.getBri(3) +
+                            " Light 2 - " + myLight.getBri(2) + " Light 3 - " + myLight.getBri(3) +
                             "\n<Power> Light 1 - " + myLight.getPower(1) + " Light 2 - " + myLight.getPower(2) +
-                            " Light 3 - "  + myLight.getPower(3) + "\n<Color> Light 1 - " + myLight.getColor(1) +
-                            " Light 2 - " + myLight.getColor(2) +" Light 3 - "  + myLight.getColor(3));
+                            " Light 3 - " + myLight.getPower(3) + "\n<Color> Light 1 - " + myLight.getColor(1) +
+                            " Light 2 - " + myLight.getColor(2) + " Light 3 - "  + myLight.getColor(3));
+
                 } catch (OcException e) {
                     Log.e(TAG, e.getMessage());
                 }
@@ -537,7 +703,6 @@ public class MainActivity extends Activity implements OcPlatform.OnResourceFound
         try {
             if(myLight.getFirstaccess())
                 doPutLightRepresentation(0);
-            myLight.setFirstaccess(false);
             curResource.get(new HashMap<String, String>(), onGetListener);
         } catch (OcException e) {
             Log.e(TAG, e.getMessage());

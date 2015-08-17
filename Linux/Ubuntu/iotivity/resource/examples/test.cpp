@@ -92,7 +92,8 @@ public:
 	std::string m_name;
 	std::string m_lightUri;
 	std::string ip, username;
-	bool firstaccess;
+	std::string m_group[5];
+	int m_group_size;bool firstaccess, hf1, hf2, hf3;
 	OCResourceHandle m_resourceHandle;
 	OCRepresentation m_lightRep;
 	ObservationIds m_interestedObservers;
@@ -101,12 +102,14 @@ public:
 	/// Constructor
 	HueResource() :
 			m_name("iotar's hue"), m_lightUri("/iotar/hue"), m_resourceHandle(
-					nullptr), firstaccess(false) {
+					nullptr), firstaccess(false), hf1(false), hf2(false), hf3(
+			false), m_group_size(0) {
 		// Initialize representation
 		for (int i = 1; i <= 3; ++i) {
 			m_power[i] = "false";
 			m_brightness[i] = 0;
 			m_color[i] = 0;
+			m_group[i] = "";
 		}
 		m_lightRep.setValue("hue1_brightness", m_brightness[1]);
 		m_lightRep.setValue("hue2_brightness", m_brightness[2]);
@@ -158,7 +161,8 @@ public:
 	void put(OCRepresentation& rep) {
 		try {
 			rep.getValue("firstaccess", firstaccess);
-			cout<<"put() firstAccess?(true=1, false=0) " <<firstaccess<<endl;
+			cout << "put() firstAccess?(true=1, false=0) " << firstaccess
+					<< endl;
 			if (firstaccess) {
 				rep.getValue("hue_ip", ip);
 				rep.getValue("hue_username", username);
@@ -173,34 +177,38 @@ public:
 				rep.getValue("hue2_power", m_power[2]);
 				rep.getValue("hue3_power", m_power[3]);
 
-				GetPutJson(U("http://"+ip+"/api/"+username+"/lights"));
-				cout<<"getPutJson end"<<endl;
+				GetPutJson(U("http://" + ip + "/api/" + username + "/lights"));
+				cout << "getPutJson end" << endl;
 			}
 		} catch (exception& e) {
 			cout << e.what() << endl;
 		}
 	}
 
-	void GetPutJson(std::string p_sUrl,
-				std::string p_sQueryPath = U(""),
-				std::vector<std::pair<std::string, std::string>>* p_pvQuery =
-			nullptr) {
+	void GetPutJson(std::string p_sUrl, std::string p_sQueryPath = U(""),
+			std::vector<std::pair<std::string, std::string>>* p_pvQuery =
+					nullptr) {
 		web::json::value vJson;
 		std::string sBody;
 
 		for (int i = 1; i <= 3; ++i) {
 
 			json::value postData;
-			if(m_power[i]=="true")
+			if (m_power[i] == "true")
 				postData["on"] = json::value::boolean(true);
 			else
 				postData["on"] = json::value::boolean(false);
 			postData["bri"] = json::value::number(m_brightness[i]);
 			postData["hue"] = json::value::number(m_color[i]);
 
-			http_client client(U("http://"+ip+"/api/"+username+"/lights/"+to_string(i)+"/state/"));
+			http_client client(
+					U(
+							"http://" + ip + "/api/" + username + "/lights/"
+									+ to_string(i) + "/state/"));
 
-			pplx::task<web::http::http_response> requestTask = client.request(methods::PUT, "", postData.to_string().c_str(), "application/json");
+			pplx::task<web::http::http_response> requestTask = client.request(
+					methods::PUT, "", postData.to_string().c_str(),
+					"application/json");
 
 			try {
 				requestTask.wait();
@@ -215,9 +223,45 @@ public:
 	// Post can create new resource or simply act like put.
 	// Gets values from the representation and
 	// updates the internal state
-	OCRepresentation post(OCRepresentation& rep) {
+	void post(OCRepresentation& rep) {
+		try {
+			cout << "post()" << endl;
 
-		return get();
+			rep.getValue("hf1", hf1);
+			rep.getValue("hf2", hf2);
+			rep.getValue("hf3", hf3);
+			cout<<"1"<<endl;
+			if (hf1 || hf2 || hf3) {
+				http_client client(
+						U("http://" + ip + "/api/" + username + "/groups"));
+				cout<<"2"<<endl;
+				json::value postData;
+				string requestBody = "{\"lights\":";
+				if(hf1 && hf2 && hf3)
+					requestBody.append(" [\"").append(to_string(1)).append( "\", \"").append(to_string(2)).append( "\", \"").append(to_string(3)).append("\"] }");
+				else if(hf1 && hf2)
+					requestBody.append(" [\"").append(to_string(1)).append( "\", \"").append(to_string(2)).append("\"] }");
+				else if(hf1 && hf3)
+					requestBody.append(" [\"").append(to_string(1)).append( "\", \"").append(to_string(3)).append("\"] }");
+				else if(hf2 && hf3)
+					requestBody.append(" [\"").append(to_string(2)).append( "\", \"").append(to_string(3)).append("\"] }");
+				cout<<requestBody<<endl;
+				cout<<"5"<<endl;
+				pplx::task<web::http::http_response> requestTask =
+						client.request(methods::POST, "",
+								requestBody,
+								"application/json");
+				cout<<"6"<<endl;
+				try {
+					requestTask.wait();
+				} catch (const std::exception &e) {
+					printf("Error exception:%s\n", e.what());
+				}
+			}
+
+		} catch (exception& e) {
+			cout << e.what() << endl;
+		}
 	}
 
 	web::uri_builder GetBuilder(std::string p_sQueryPath,
@@ -273,29 +317,54 @@ public:
 	OCRepresentation get() {
 
 		// Create http_client to send the request.
-		cout<<"ip : "<<ip<<",  username : "<<username<<endl;
-		web::json::value v = GetJson(
-				U("http://"+ip+"/api/"+username+"/lights"));
-		cout << "asdf" << endl;
-		m_power[1] = v.at(U("1")).at(U("state")).at(U("on")).to_string();
+		cout << "ip : " << ip << ",  username : " << username << endl;
+		web::json::value v = GetJson(U("http://" + ip + "/api/" + username));
+
+		m_power[1] =
+				v.at(U("lights")).at(U("1")).at(U("state")).at(U("on")).to_string();
 		cout << m_power[1] << endl;
-		m_power[2] = v.at(U("2")).at(U("state")).at(U("on")).to_string();
+		m_power[2] =
+				v.at(U("lights")).at(U("2")).at(U("state")).at(U("on")).to_string();
 		cout << m_power[2] << endl;
-		m_power[3] = v.at(U("3")).at(U("state")).at(U("on")).to_string();
+		m_power[3] =
+				v.at(U("lights")).at(U("3")).at(U("state")).at(U("on")).to_string();
 		cout << m_power[3] << endl;
-		m_brightness[1] = v.at(U("1")).at(U("state")).at(U("bri")).as_integer();
+		m_brightness[1] = v.at(U("lights")).at(U("1")).at(U("state")).at(
+				U("bri")).as_integer();
 		cout << m_brightness[1] << endl;
-		m_brightness[2] = v.at(U("2")).at(U("state")).at(U("bri")).as_integer();
+		m_brightness[2] = v.at(U("lights")).at(U("2")).at(U("state")).at(
+				U("bri")).as_integer();
 		cout << m_brightness[2] << endl;
-		m_brightness[3] = v.at(U("3")).at(U("state")).at(U("bri")).as_integer();
+		m_brightness[3] = v.at(U("lights")).at(U("3")).at(U("state")).at(
+				U("bri")).as_integer();
 		cout << m_brightness[3] << endl;
-		m_color[1] = v.at(U("1")).at(U("state")).at(U("hue")).as_integer();
+		m_color[1] =
+				v.at(U("lights")).at(U("1")).at(U("state")).at(U("hue")).as_integer();
 		cout << m_color[1] << endl;
-		m_color[2] = v.at(U("2")).at(U("state")).at(U("hue")).as_integer();
+		m_color[2] =
+				v.at(U("lights")).at(U("2")).at(U("state")).at(U("hue")).as_integer();
 		cout << m_color[2] << endl;
-		m_color[3] = v.at(U("3")).at(U("state")).at(U("hue")).as_integer();
+		m_color[3] =
+				v.at(U("lights")).at(U("3")).at(U("state")).at(U("hue")).as_integer();
 		cout << m_color[3] << endl;
-		cout << "END!!!!" << endl;
+
+		if (firstaccess) {
+			if (v.at(U("groups")).size() != 0) {
+				json::array& groupArr = v.at(U("groups")).at(U("1")).at(
+						U("lights")).as_array();
+				int gSize = groupArr.size();
+				m_group_size = 0;
+				for (int i = 0; i < gSize; i++) {
+					m_group[i + 1] = groupArr.at(i).to_string();
+					m_lightRep.setValue("hue" + to_string(i + 1) + "_group",
+							m_group[i + 1]);
+					cout << "for" << endl;
+					m_group_size++;
+				}
+			}
+			m_lightRep.setValue("hue_group_size", m_group_size);
+		}
+
 		m_lightRep.setValue("hue1_brightness", m_brightness[1]);
 		m_lightRep.setValue("hue2_brightness", m_brightness[2]);
 		m_lightRep.setValue("hue3_brightness", m_brightness[3]);
@@ -305,6 +374,7 @@ public:
 		m_lightRep.setValue("hue1_power", m_power[1]);
 		m_lightRep.setValue("hue2_power", m_power[2]);
 		m_lightRep.setValue("hue3_power", m_power[3]);
+		cout << "END!!!!" << endl;
 		return m_lightRep;
 	}
 
@@ -321,6 +391,27 @@ public:
 				m_resourceHandle, interface);
 		if (OC_STACK_OK != result) {
 			cout << "Binding TypeName to Resource was unsuccessful\n";
+		}
+	}
+
+	void deleteGroup() {
+		cout << "deleteGrou() Start" << endl;
+
+		web::json::value v = GetJson(U("http://" + ip + "/api/" + username));
+		cout << "0" << endl;
+		if (v.at(U("groups")).size() != 0) {
+			cout << "1" << endl;
+			http_client client(
+					U("http://" + ip + "/api/" + username + "/groups/1"));
+			cout << "2" << endl;
+			pplx::task<web::http::http_response> requestTask = client.request(
+					methods::DEL);
+			cout << "3" << endl;
+			try {
+				requestTask.wait();
+			} catch (const std::exception &e) {
+				printf("Error exception:%s\n", e.what());
+			}
 		}
 	}
 
@@ -361,6 +452,8 @@ private:
 					pResponse->setErrorCode(200);
 					pResponse->setResponseResult(OC_EH_OK);
 					pResponse->setResourceRepresentation(get());
+					if (firstaccess)
+						firstaccess = false;
 					if (OC_STACK_OK == OCPlatform::sendResponse(pResponse)) {
 						ehResult = OC_EH_OK;
 					}
@@ -372,8 +465,6 @@ private:
 					// Do related operations related to PUT request
 					// Update the lightResource
 					put(rep);
-					if(firstaccess)
-						firstaccess = false;
 					pResponse->setErrorCode(200);
 					pResponse->setResponseResult(OC_EH_OK);
 					pResponse->setResourceRepresentation(get());
@@ -386,22 +477,21 @@ private:
 					OCRepresentation rep = request->getResourceRepresentation();
 
 					// Do related operations related to POST request
-					OCRepresentation rep_post = post(rep);
-					pResponse->setResourceRepresentation(rep_post);
-					pResponse->setErrorCode(200);
-					if (rep_post.hasAttribute("createduri")) {
-						pResponse->setResponseResult(OC_EH_RESOURCE_CREATED);
-						pResponse->setNewResourceUri(
-								rep_post.getValue<std::string>("createduri"));
-					} else {
-						pResponse->setResponseResult(OC_EH_OK);
-					}
 
+					pResponse->setErrorCode(200);
+					pResponse->setResponseResult(OC_EH_OK);
+					post(rep);
 					if (OC_STACK_OK == OCPlatform::sendResponse(pResponse)) {
 						ehResult = OC_EH_OK;
 					}
 				} else if (requestType == "DELETE") {
-					cout << "Delete request received" << endl;
+					cout << "Delete HueGroup" << endl;
+					pResponse->setErrorCode(200);
+					pResponse->setResponseResult(OC_EH_OK);
+					deleteGroup();
+					if (OC_STACK_OK == OCPlatform::sendResponse(pResponse)) {
+						ehResult = OC_EH_OK;
+					}
 				}
 			}
 
