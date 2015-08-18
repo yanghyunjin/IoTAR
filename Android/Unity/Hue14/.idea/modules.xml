@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/Hue14.iml" filepath="$PROJECT_DIR$/Hue14.iml" />
+      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/huelocalsdk/huelocalsdk.iml" filepath="$PROJECT_DIR$/huelocalsdk/huelocalsdk.iml" />
+      <module fileurl="file://$PROJECT_DIR$/huesdkresources/huesdkresources.iml" filepath="$PROJECT_DIR$/huesdkresources/huesdkresources.iml" />
+      <module fileurl="file://$PROJECT_DIR$/iotivity-armeabi-v7a-base-release/iotivity-armeabi-v7a-base-release.iml" filepath="$PROJECT_DIR$/iotivity-armeabi-v7a-base-release/iotivity-armeabi-v7a-base-release.iml" />
+    </modules>
+  </component>
+</project>

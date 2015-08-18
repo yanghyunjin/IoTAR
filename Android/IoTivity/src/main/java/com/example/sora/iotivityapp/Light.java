@@ -1,10 +1,11 @@
-package com.example.sora.iotivityapp;
+package com.IoTAR.HUE_150814;
 
 
 class Light {
     public String[] m_power = new String[5];
     public int[]    m_brightness = new int[5];
-    public int[]    m_color = new int[5];
+    public double[]    m_color_x = new double[5];
+    public double[]    m_color_y = new double[5];
     public String m_name, m_ip, m_username;
     public boolean m_firstaccess;
 
@@ -12,7 +13,8 @@ class Light {
         for (int i = 1; i <= 3; ++i) {
             m_power[i] = "false";
             m_brightness[i] = 0;
-            m_color[i] = 0;
+            m_color_x[i] = 0.0;
+            m_color_y[i] = 0.0;
         }
         m_name = "iotar's hue";
         m_ip = null;
@@ -39,13 +41,17 @@ class Light {
     }
 
     ///// color /////
-    Light setColor(int color, int i) {
-        m_color[i] = color;
+    Light setColor(double x,double y, int i) {
+        m_color_x[i] = x;
+        m_color_y[i] = y;
         return this;
     }
 
-    int getColor(int i) {
-        return m_color[i];
+    double getColor_x(int i) {
+        return m_color_x[i];
+    }
+    double getColor_y(int i) {
+        return m_color_y[i];
     }
 
     ///// name /////

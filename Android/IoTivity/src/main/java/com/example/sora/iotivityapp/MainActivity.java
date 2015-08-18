@@ -109,6 +109,8 @@ public class MainActivity extends Activity implements OcPlatform.OnResourceFound
         r1 = (CheckBox) findViewById(R.id.light1);
         r2 = (CheckBox) findViewById(R.id.light2);
         r3 = (CheckBox) findViewById(R.id.light3);
+
+
         hueGroup = HueGroup.getInstance();
         setVisibleRadioButton();
         mActivity = this;

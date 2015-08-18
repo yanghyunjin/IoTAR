@@ -1,0 +1,1 @@
+include ':app', ':huelocalsdk', ':huesdkresources', ':iotivity-armeabi-v7a-base-release'
