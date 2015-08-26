@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items version="2" >
+
+    <item
+        jar="/Users/yanghyunjin/Desktop/Hue9/app/libs/QCARUnityPlayer.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="fc82380e787fc40cc13f3a471bc0d30cc568d812">
+        <dex dex="/Users/yanghyunjin/Desktop/Hue9/app/build/intermediates/pre-dexed/debug/QCARUnityPlayer-8869c9fda504208c3e295fccf86cf122dd9005d6.jar" />
+    </item>
+    <item
+        jar="/Users/yanghyunjin/Desktop/Hue9/app/build/intermediates/exploded-aar/Hue9/iotivity-armeabi-v7a-base-release/unspecified/jars/classes.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="66b65b905cb2ad0984ec8c027c51e08b4e3512f9">
+        <dex dex="/Users/yanghyunjin/Desktop/Hue9/app/build/intermediates/pre-dexed/debug/classes-c57aa06074e482b0a5dd511dfd4b0286952f26f0.jar" />
+    </item>
+    <item
+        jar="/Users/yanghyunjin/Desktop/Hue9/app/libs/Vuforia.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="c0b912ee883b3f96c6170cafb3fe58c682d95629">
+        <dex dex="/Users/yanghyunjin/Desktop/Hue9/app/build/intermediates/pre-dexed/debug/Vuforia-ab2ecbb2edb7b401e91c2895531be7bd0dd77e22.jar" />
+    </item>
+    <item
+        jar="/Users/yanghyunjin/Desktop/Hue9/huesdkresources/huesdkresources.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="f13f24ee881ba4e1a7e1410aee7489dc723f1c9b">
+        <dex dex="/Users/yanghyunjin/Desktop/Hue9/app/build/intermediates/pre-dexed/debug/huesdkresources-49933c83ba1fbb5136b10847767d0b883e7b1623.jar" />
+    </item>
+    <item
+        jar="/Users/yanghyunjin/Desktop/Hue9/huelocalsdk/huelocalsdk.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="9a2e9a9d2f6dbb478a7c046a9e53140007fa2f30">
+        <dex dex="/Users/yanghyunjin/Desktop/Hue9/app/build/intermediates/pre-dexed/debug/huelocalsdk-c63f9e29dbf4cf1e1bf21087e59c368b6aeeda74.jar" />
+    </item>
+    <item
+        jar="/Users/yanghyunjin/Desktop/Hue9/app/libs/unity-classes.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="1ecebd98da2f1e39f3f79a78d84d72acf036adc4">
+        <dex dex="/Users/yanghyunjin/Desktop/Hue9/app/build/intermediates/pre-dexed/debug/unity-classes-0563b2b95c4042fd704393ccb6e8e1e75e1ca83e.jar" />
+    </item>
+
+</items>
