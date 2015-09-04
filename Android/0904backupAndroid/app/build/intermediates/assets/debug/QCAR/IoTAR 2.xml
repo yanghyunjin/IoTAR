@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<QCARConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="qcar_config.xsd">
+  <Tracking>
+    <ImageTarget name="hue_3" size="512.000000 410.000000" />
+    <ImageTarget name="hue_2" size="512.000000 415.000000" />
+    <ImageTarget name="hue_1" size="512.000000 420.000000" />
+    <ImageTarget name="marker3" size="240.000000 395.000000" />
+    <ImageTarget name="marker2" size="240.000000 400.000000" />
+    <ImageTarget name="marker1" size="240.000000 400.000000" />
+    <ImageTarget name="tracker" size="512.000000 512.000000" />
+  </Tracking>
+</QCARConfig>
