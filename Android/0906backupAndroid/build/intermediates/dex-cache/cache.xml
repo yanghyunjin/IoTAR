@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items version="2" >
+
+    <item
+        jar="C:\Users\rhkdgss232\Desktop\AndroidProject\Iotar7\app\build\intermediates\exploded-aar\Iotar7\iotivity-armeabi-v7a-base-release\unspecified\jars\classes.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="66b65b905cb2ad0984ec8c027c51e08b4e3512f9">
+        <dex dex="C:\Users\rhkdgss232\Desktop\AndroidProject\Iotar7\app\build\intermediates\pre-dexed\debug\classes-4b8bae49caf7f23e154001e023ea80fe6a50324f.jar" />
+    </item>
+    <item
+        jar="C:\Users\rhkdgss232\Desktop\AndroidProject\Iotar7\app\libs\Vuforia.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="c0b912ee883b3f96c6170cafb3fe58c682d95629">
+        <dex dex="C:\Users\rhkdgss232\Desktop\AndroidProject\Iotar7\app\build\intermediates\pre-dexed\debug\Vuforia-85d508271cccc62c64e625b4aca05ab45ff2900a.jar" />
+    </item>
+    <item
+        jar="C:\Users\rhkdgss232\Desktop\AndroidProject\Iotar7\huelocalsdk\huelocalsdk.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="9a2e9a9d2f6dbb478a7c046a9e53140007fa2f30">
+        <dex dex="C:\Users\rhkdgss232\Desktop\AndroidProject\Iotar7\app\build\intermediates\pre-dexed\debug\huelocalsdk-97a6855f228001a15d5831d4ac1b028f867bd838.jar" />
+    </item>
+    <item
+        jar="C:\Users\rhkdgss232\Desktop\AndroidProject\Iotar7\app\libs\unity-classes.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="1ecebd98da2f1e39f3f79a78d84d72acf036adc4">
+        <dex dex="C:\Users\rhkdgss232\Desktop\AndroidProject\Iotar7\app\build\intermediates\pre-dexed\debug\unity-classes-2a1b9cca420fa98656f3be1c2a6998c293234b0e.jar" />
+    </item>
+    <item
+        jar="C:\Users\rhkdgss232\Desktop\AndroidProject\Iotar7\app\libs\QCARUnityPlayer.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="fc82380e787fc40cc13f3a471bc0d30cc568d812">
+        <dex dex="C:\Users\rhkdgss232\Desktop\AndroidProject\Iotar7\app\build\intermediates\pre-dexed\debug\QCARUnityPlayer-43852ee8469943f5aa8551f7d426a0c00e3dccc5.jar" />
+    </item>
+    <item
+        jar="C:\Users\rhkdgss232\Desktop\AndroidProject\Iotar7\huesdkresources\huesdkresources.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="f13f24ee881ba4e1a7e1410aee7489dc723f1c9b">
+        <dex dex="C:\Users\rhkdgss232\Desktop\AndroidProject\Iotar7\app\build\intermediates\pre-dexed\debug\huesdkresources-14bf3d4199647bdc5fa1e1965e9d89bed19b26f0.jar" />
+    </item>
+
+</items>
