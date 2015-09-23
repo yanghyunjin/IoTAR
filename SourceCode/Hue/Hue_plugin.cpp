@@ -1,27 +1,4 @@
-//******************************************************************
-//
-// Copyright 2014 Intel Mobile Communications GmbH All Rights Reserved.
-//
-//-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-//-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
-///
-/// This sample provides steps to define an interface for a resource
-/// (properties and methods) and host this resource on the server.
-///
 #include <functional>
 #include <pthread.h>
 #include <mutex>
@@ -64,23 +41,13 @@ namespace PH = std::placeholders;
 
 int gObservation = 0;
 
-// Specifies where to notify all observers or list of observers
-// false: notifies all observers
-// true: notifies list of observers
+
 bool isListOfObservers = false;
 
-// Specifies secure or non-secure
-// false: non-secure resource
-// true: secure resource
 bool isSecure = false;
 
-/// Specifies whether Entity handler is going to do slow response or not
 bool isSlowResponse = false;
 
-// Forward declaring the entityHandler
-
-/// This class represents a single resource named 'lightResource'. This resource has
-/// two simple properties named 'state' and 'power'
 
 class HueResource {
 
@@ -127,10 +94,7 @@ public:
 		m_lightRep.setValue("hue3_power", m_power[3]);
 	}
 
-	/* Note that this does not need to be a member function: for classes you do not have
-	 access to, you can accomplish this with a free function: */
-
-	/// This function internally calls registerResource API.
+	
 	void createResource() {
 		//URI of the resource
 		std::string resourceURI = "/iotar/hue";
@@ -160,9 +124,7 @@ public:
 		return m_resourceHandle;
 	}
 
-	// Puts representation.
-	// Gets values from the representation and
-	// updates the internal state
+
 	void put(OCRepresentation& rep) {
 		try {
 			rep.getValue("firstaccess", firstaccess);
@@ -228,10 +190,7 @@ public:
 		}
 	}
 
-	// Post representation.
-	// Post can create new resource or simply act like put.
-	// Gets values from the representation and
-	// updates the internal state
+	
 	void post(OCRepresentation& rep) {
 		try {
 			cout << "post()" << endl;
@@ -324,9 +283,7 @@ public:
 		return vJson;
 	}
 
-	// gets the updated representation.
-	// Updates the representation with latest internal state before
-	// sending out.
+
 	OCRepresentation get() {
 
 		// Create http_client to send the request.
@@ -610,10 +567,7 @@ int main(int argc, char* argv[]) {
 
 		std::cout << "Added Interface and Type" << std::endl;
 
-		// A condition variable will free the mutex it is given, then do a non-
-		// intensive block until 'notify' is called on it.  In this case, since we
-		// don't ever call cv.notify, this should be a non-processor intensive version
-		// of while(true);
+		
 		std::mutex blocker;
 		std::condition_variable cv;
 		std::unique_lock<std::mutex> lock(blocker);

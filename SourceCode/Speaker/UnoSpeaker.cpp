@@ -1,34 +1,14 @@
-/**
- * \file MP3Shield_Library_Demo.ino
- *
- * \brief Example sketch of using the MP3Shield Arduino driver, demonstrating all methods and functions.
- * \remarks comments are implemented with Doxygen Markdown format
- *
- * \author Bill Porter
- * \author Michael P. Flaga
- *
- * This sketch listens for commands from a serial terminal (like the Serial
- * Monitor in the Arduino IDE). If it sees 1-9 it will try to play an MP3 file
- * named track00x.mp3 where x is a number from 1 to 9. For eaxmple, pressing
- * 2 will play 'track002.mp3'. A lowe case 's' will stop playing the mp3.
- * 'f' will play an MP3 by calling it by it's filename as opposed to a track
- * number.
- *
- * Sketch assumes you have MP3 files with filenames like "track001.mp3",
- * "track002.mp3", etc on an SD card loaded into the shield.
- */
 
 #include <SPI.h>
 
-//Add the SdFat Libraries
+
 #include <SdFat.h>
 #include <SdFatUtil.h>
 
 
-//and the MP3 Shield Library
+
 #include <SFEMP3Shield.h>
 
-// Below is not needed if interrupt driven. Safe to remove if not using.
 #if defined(USE_MP3_REFILL_MEANS) && USE_MP3_REFILL_MEANS == USE_MP3_Timer1
   #include <TimerOne.h>
 #elif defined(USE_MP3_REFILL_MEANS) && USE_MP3_REFILL_MEANS == USE_MP3_SimpleTimer
@@ -42,7 +22,7 @@ SFEMP3Shield MP3player;
 
 void setup() {
 
-  uint8_t result; //result code from some function as to be tested at later time.
+  uint8_t result; 
 
   Serial.begin(115200);
 
@@ -134,15 +114,7 @@ void loop() {
 
 uint32_t  millis_prv = millis();
 
-//------------------------------------------------------------------------------
-/**
- * \brief Decode the Menu.
- *
- * Parses through the characters of the users input, executing corresponding
- * MP3player library functions and features then displaying a brief menu and
- * prompting for next input command.
- */
- 
+
  void play_music(uint8_t sel){
    
    uint8_t result; // result code from some function as to be tested at later time.
@@ -290,10 +262,10 @@ void parse_menu(byte key_command) {
   }else if(key_command == 'p') {
     if( MP3player.getState() == playback) {
       MP3player.pauseMusic();
-      //Serial.println(F("Pausing"));
+    
     } else if( MP3player.getState() == paused_playback) {
       MP3player.resumeMusic();
-      //Serial.println(F("Resuming"));
+    
     }
 
 	getState();
@@ -310,47 +282,4 @@ void parse_menu(byte key_command) {
 
 }
 
-//------------------------------------------------------------------------------
-/**
- * \brief Print Help Menu.
- *
- * Prints a full menu of the commands available along with descriptions.
- */
- /*
-void help() {
-  Serial.println(F("Arduino SFEMP3Shield Library Example:"));
-  Serial.println(F(" courtesy of Bill Porter & Michael P. Flaga"));
-  Serial.println(F("COMMANDS:"));
-  Serial.println(F(" [1-9] to play a track"));
-  Serial.println(F(" [f] play track001.mp3 by filename example"));
-  Serial.println(F(" [F] same as [f] but with initial skip of 2 second"));
-  Serial.println(F(" [s] to stop playing"));
-  Serial.println(F(" [d] display directory of SdCard"));
-  Serial.println(F(" [+ or -] to change volume"));
-  Serial.println(F(" [> or <] to increment or decrement play speed by 1 factor"));
-  Serial.println(F(" [i] retrieve current audio information (partial list)"));
-  Serial.println(F(" [p] to pause."));
-  Serial.println(F(" [t] to toggle sine wave test"));
-  Serial.println(F(" [S] Show State of Device."));
-  Serial.println(F(" [b] Play a MIDI File Beep"));
-#if !defined(__AVR_ATmega32U4__)
-  Serial.println(F(" [e] increment Spatial EarSpeaker, default is 0, wraps after 4"));
-  Serial.println(F(" [m] perform memory test. reset is needed after to recover."));
-  Serial.println(F(" [M] Toggle between Mono and Stereo Output."));
-  Serial.println(F(" [g] Skip to a predetermined offset of ms in current track."));
-  Serial.println(F(" [k] Skip a predetermined number of ms in current track."));
-  Serial.println(F(" [r] resumes play from 2s from begin of file"));
-  Serial.println(F(" [R] Resets and initializes VS10xx chip."));
-  Serial.println(F(" [O] turns OFF the VS10xx into low power reset."));
-  Serial.println(F(" [o] turns ON the VS10xx out of low power reset."));
-  Serial.println(F(" [D] to toggle SM_DIFF between inphase and differential output"));
-  Serial.println(F(" [V] Enable VU meter Test."));
-  Serial.println(F(" [B] Increament bass frequency by 10Hz"));
-  Serial.println(F(" [C] Increament bass amplitude by 1dB"));
-  Serial.println(F(" [T] Increament treble frequency by 1000Hz"));
-  Serial.println(F(" [E] Increament treble amplitude by 1dB"));
-#endif
-  Serial.println(F(" [h] this help"));
-}
-*/
 

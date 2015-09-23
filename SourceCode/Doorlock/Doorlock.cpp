@@ -6,15 +6,8 @@
 #include "ocpayload.h"
 #include <string.h>
 
-
-//#ifdef ARDUINOWIFI
-// Arduino WiFi Shield
 #include <SPI.h>
 #include <Servo.h>
-//#include <WiFi.h>
-//#include <WiFiUdp.h>
-//#else   
-// Arduino Ethernet Shield
 #include <Ethernet.h>
 #include <Dns.h>
 #include <EthernetClient.h>
@@ -22,7 +15,7 @@
 #include <EthernetUdp.h>
 #include <Dhcp.h>
 #include <EthernetServer.h>
-//#endif
+
 
 const char *getResult(OCStackResult result);
 
@@ -51,18 +44,11 @@ static Doorlcok doorlock;
 // Arduino Ethernet Shield
 int ConnectToNetwork()
 {
-	//OC_LOG(DEBUG, TAG, PCF("ConnectToNetwork is starting..."));
-    // Note: ****Update the MAC address here with your shield's MAC address****
-
-	  
+	
 	  if(Ethernet.begin(mac)== 0){
 	  
 	  
-		//  OC_LOG(DEBUG, TAG, PCF("Failed to configure Ethernet using DHCP"));
-   
-  
-  // give the Ethernet shield a second to initialize:
-}
+	}
   delay(1000);
     
 
@@ -70,10 +56,6 @@ int ConnectToNetwork()
    OC_LOG_V(INFO, TAG, "IP Address:  %d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
     return 0;
 }
-//#endif //ARDUINOWIFI
-
-// This is the entity handler for the registered resource.
-// This is invoked by OCStack whenever it recevies a request for this resource.
 
 
 OCEntityHandlerResult OCEntityHandlerCb(OCEntityHandlerFlag flag, OCEntityHandlerRequest * entityHandlerRequest,
@@ -84,13 +66,13 @@ OCEntityHandlerResult OCEntityHandlerCb(OCEntityHandlerFlag flag, OCEntityHandle
     OCRepPayload* payload = OCRepPayloadCreate();
     if(!payload)
     {
-        //OC_LOG(ERROR, TAG, PCF("Failed to allocate Payload"));
+       
         return OC_EH_ERROR;
     }
 
     if(entityHandlerRequest && (flag & OC_REQUEST_FLAG))
     {
-        //OC_LOG (INFO, TAG, PCF("Flag includes OC_REQUEST_FLAG"));
+     
 
         if(OC_REST_GET == entityHandlerRequest->method)
         {
@@ -109,9 +91,7 @@ OCEntityHandlerResult OCEntityHandlerCb(OCEntityHandlerFlag flag, OCEntityHandle
 			int64_t order = 0;
 			int64_t temp = 0;
 			char in[10];
-			
-		
-			
+
 				for(angle =90; angle>0; angle--){  // 열리기 
 					servo.write(angle);
 					delay(15); 
@@ -179,17 +159,12 @@ OCEntityHandlerResult OCEntityHandlerCb(OCEntityHandlerFlag flag, OCEntityHandle
 //The setup function is called once at startup of the sketch
 void setup()
 {
-    // Add your initialization code here
-    // Note : This will initialize Serial port on Arduino at 115200 bauds
-   // OC_LOG_INIT();
+   
    
     Serial.begin(115200);
     Serial1.begin(115200);
 	
     OC_LOG(DEBUG, TAG, PCF("OCServer is starting..."));
-//    OC_LOG(DEBUG, TAG, PCF("OCServer is starting..."));
-	
-    // Connect to Ethernet or WiFi network
    
      if (ConnectToNetwork() != 0)
     {
@@ -197,20 +172,20 @@ void setup()
         return;
     }
 	
-    // Initialize the OC Stack in Server mode
+    
     if (OCInit(NULL, 0, OC_SERVER) != OC_STACK_OK)
     {
-     //   OC_LOG(ERROR, TAG, PCF("OCStack init error"));
+     
         return;
     }
 	
-    // Declare and create the example resource: Light
-    createLightResource();
+  
+	createDoorlockResource();
 
     
     servo.attach(servoPin);
     
-    OC_LOG(DEBUG, TAG, PCF("소라 놋북 터진 날 15.07.31 ..."));
+   
     
     	for(angle =0; angle<90; angle++){  //닫히기   
 					servo.write(angle);
@@ -226,14 +201,10 @@ void setup()
 // The loop function is called in an endless loop
 void loop()
 {
-	//OC_LOG(DEBUG, TAG, PCF("doing loop funcation..."));
-    // This artificial delay is kept here to avoid endless spinning
-    // of Arduino microcontroller. Modify it as per specific application needs.
-
-    // Give CPU cycles to OCStack to perform send/recv and other OCStack stuff
+	
     if (OCProcess() != OC_STACK_OK)
     {
-      //  OC_LOG(ERROR, TAG, PCF("OCStack process error"));
+    
         return;
     }
     
@@ -246,7 +217,7 @@ void loop()
 
 
 
-void createLightResource()
+void createDoorlockResource()
 {
  
     OCStackResult res = OCCreateResource(&doorlock.handle,
@@ -256,45 +227,5 @@ void createLightResource()
             OCEntityHandlerCb,
             NULL,
             OC_DISCOVERABLE|OC_OBSERVABLE);
-   OC_LOG_V(INFO, TAG, "Created Light resource with result: %s", getResult(res));
+   
 }
-
-const char *getResult(OCStackResult result) {
-    switch (result) {
-    case OC_STACK_OK:
-        return "OC_STACK_OK";
-    case OC_STACK_INVALID_URI:
-        return "OC_STACK_INVALID_URI";
-    case OC_STACK_INVALID_QUERY:
-        return "OC_STACK_INVALID_QUERY";
-    case OC_STACK_INVALID_IP:
-        return "OC_STACK_INVALID_IP";
-    case OC_STACK_INVALID_PORT:
-        return "OC_STACK_INVALID_PORT";
-    case OC_STACK_INVALID_CALLBACK:
-        return "OC_STACK_INVALID_CALLBACK";
-    case OC_STACK_INVALID_METHOD:
-        return "OC_STACK_INVALID_METHOD";
-    case OC_STACK_NO_MEMORY:
-        return "OC_STACK_NO_MEMORY";
-    case OC_STACK_COMM_ERROR:
-        return "OC_STACK_COMM_ERROR";
-    case OC_STACK_INVALID_PARAM:
-        return "OC_STACK_INVALID_PARAM";
-    case OC_STACK_NOTIMPL:
-        return "OC_STACK_NOTIMPL";
-    case OC_STACK_NO_RESOURCE:
-        return "OC_STACK_NO_RESOURCE";
-    case OC_STACK_RESOURCE_ERROR:
-        return "OC_STACK_RESOURCE_ERROR";
-    case OC_STACK_SLOW_RESOURCE:
-        return "OC_STACK_SLOW_RESOURCE";
-    case OC_STACK_NO_OBSERVERS:
-        return "OC_STACK_NO_OBSERVERS";
-    case OC_STACK_ERROR:
-        return "OC_STACK_ERROR";
-    default:
-        return "UNKNOWN";
-    }
-}
-

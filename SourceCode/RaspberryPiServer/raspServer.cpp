@@ -1,9 +1,3 @@
-/*
- * raspServer.cpp
- *
- *  Created on: 2015. 8. 8.
- *      Author: hyun
- */
 
 #include <functional>
 
@@ -200,39 +194,19 @@ public:
     }
 
     OCRepresentation get() {
-/*
-        //    server_Rep.setValue("hue_name", hue_name);
 
-        //server_Rep.setValue("hue1_state", hue_state[1]);
-        server_Rep.setValue("hue1_power", hue_power[1]);
-        server_Rep.setValue("hue1_brightness", hue_brightness[1]);
-        server_Rep.setValue("hue1_color_x", hue_color_x[1]);
-        server_Rep.setValue("hue1_color_y", hue_color_y[1]);
-
-        //server_Rep.setValue("hue2_state", hue_state[2]);
-        server_Rep.setValue("hue2_power", hue_power[2]);
-        server_Rep.setValue("hue2_brightness", hue_brightness[2]);
-        server_Rep.setValue("hue1_color_x", hue_color_x[2]);
-        server_Rep.setValue("hue1_color_y", hue_color_y[2]);
-
-        //server_Rep.setValue("hue3_state", hue_state[3]);
-        server_Rep.setValue("hue3_power", hue_power[3]);
-        server_Rep.setValue("hue3_brightness", hue_brightness[3]);
-        server_Rep.setValue("hue1_color_x", hue_color_x[3]);
-        server_Rep.setValue("hue1_color_y", hue_color_y[3]);
-*/
 	 server_Rep.setValue("hue1_power", hue_power[1]);
 	 server_Rep.setValue("hue2_power", hue_power[2]);
 	 server_Rep.setValue("hue3_power", hue_power[3]);
-	//cout <<"wwwwwwwwwwwwwwwwwww :                " << hue_power[1] << " " << hue_power[2] << " " << hue_power[3] << endl;
+
 //---------------------------------------------------------------------------------------
         server_Rep.setValue("doorlock_key", doorlock_key);
 
 //---------------------------------------------------------------------------------------
-        //server_Rep.setValue("speaker_name", speaker_name);
+       
         server_Rep.setValue("speaker_track", speaker_track);
 
-        //server_Rep.setValue("speaker_time", speaker_time);
+      
         server_Rep.setValue("speaker_volume", speaker_volume);
         server_Rep.setValue("speaker_state", speaker_state);
 //
@@ -731,11 +705,7 @@ int main(int argc, char* argv[]) {
 		delay(200);
 		if(server.huePutFirst == true){
 
-		//cout << digitalRead(SW1) << endl;
-		//cout << digitalRead(SW2) << endl;
-		//cout << digitalRead(SW3) << endl;
-		//cout << digitalRead(SW4) << endl;
-
+	
 		if(digitalRead(SW1) == 1){
 			delay(500);
 			if(digitalRead(SW1) == 1){
